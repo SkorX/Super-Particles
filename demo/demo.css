@@ -1,0 +1,46 @@
+html,
+body {
+    margin: 0;
+    border: 0;
+    padding: 0;
+    background-color: black;
+}
+
+canvas#super-particles-demo {
+    display: block;
+    width: 100vw;
+    height: 100vh;
+}
+
+.right-top-corner {
+    position: absolute;
+    overflow: hidden;
+    top: 0;
+    right: 0;
+    z-index: 1;
+    width: auto;
+    background: rgba(0,0,0,0.5);
+}
+
+#diag {
+    font-family: "Consolas";
+    color: white;
+    width: auto;
+}
+#controls {
+    margin-top: 5px;
+    overflow: hidden;
+    width: auto;
+}
+#controls #addParticle,
+#controls #removeParticle {
+    float: left;
+    border: 1px solid white;
+    padding: 5px;
+    box-sizing: border-box;
+    width: calc(50% - 4px);
+    color: white;
+    font-weight: bold;
+    text-align: center;
+    user-select: none;
+}
