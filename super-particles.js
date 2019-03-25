@@ -48,8 +48,8 @@
 //         enabled:                     true,           (boolean)
 //         max_distance:                150,            (numbar)
 //         color:                       "#FFFFFF",      (string, [#colorString])
-//         width:                       2,              (number)
-//         opacity:                     0.8,            (number, (0 < val <= 1))
+//         width:                       1.5,            (number)
+//         opacity:                     0.6,            (number, (0 < val <= 1))
 //     }
 //     attraction: {
 //         enabled:                     true            (boolean)
@@ -456,8 +456,8 @@ var superParticles = function (canvas, options) {
             enabled:      true,
             max_distance: 150,                  //max distance in pixels (to draw a link line)
             color:        "#FFFFFF",
-            width:        2,
-            opacity:      0.8,
+            width:        1.5,
+            opacity:      0.6,
         },
         attraction: {
             enabled: true,
