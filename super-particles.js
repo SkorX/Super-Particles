@@ -46,7 +46,7 @@
 //     }
 //     linking: {
 //         enabled:                     true,           (boolean)
-//         max_distance:                200,            (numbar)
+//         max_distance:                150,            (numbar)
 //         color:                       "#FFFFFF",      (string, [#colorString])
 //         width:                       2,              (number)
 //         opacity:                     0.8,            (number, (0 < val <= 1))
@@ -454,7 +454,7 @@ var superParticles = function (canvas, options) {
 
         linking: {
             enabled:      true,
-            max_distance: 200,                  //max distance in pixels (to draw a link line)
+            max_distance: 150,                  //max distance in pixels (to draw a link line)
             color:        "#FFFFFF",
             width:        2,
             opacity:      0.8,
@@ -879,7 +879,30 @@ var superParticles = function (canvas, options) {
         this._drawing_ClearCanvas();
 
         for (var i = 0; i < this._particlesCount; i++) {
-            //TODO linking
+            //line linking
+            if (this._defaults.linking.enabled) {
+                var maxDistanceSqr = Math.sqr(this._defaults.linking.max_distance);
+
+                for (var j = i + 1; j < this._particlesCount; j++) {
+                    var distanceSqr =
+                        Math.sqr(this._particles[i]._position.x - this._particles[j]._position.x) +
+                        Math.sqr(this._particles[i]._position.y - this._particles[j]._position.y);
+
+                    if (distanceSqr <= maxDistanceSqr) {
+                        this._canvas.ctx.save();
+                        
+                        this._canvas.ctx.beginPath();
+                        this._canvas.ctx.moveTo(this._particles[i]._position.x, this._particles[i]._position.y);
+                        this._canvas.ctx.lineTo(this._particles[j]._position.x, this._particles[j]._position.y);
+                        this._canvas.ctx.lineWidth   = this._defaults.linking.width;
+                        this._canvas.ctx.strokeStyle = this._defaults.linking.color;
+                        this._canvas.ctx.globalAlpha = this._defaults.linking.opacity * (1 - distanceSqr / maxDistanceSqr);
+                        this._canvas.ctx.stroke();
+
+                        this._canvas.ctx.restore();
+                    }
+                }
+            }
 
             //particle drawing
             this._canvas.ctx.save();
