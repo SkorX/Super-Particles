@@ -37,7 +37,7 @@ It's pretty new project, but has implemented multiple core features.
 - [x] Event system
 - [x] Window resize handling (for canvases that change it's size according to screen size)
 - [x] Diagnostics (fps meter, particles count, frame count)
-- [ ] Low FPS mode (limit to max 30 FPS)
+- [x] Low FPS mode (limit to max 30 FPS)
 - [ ] Better demo page
 - [x] Screenshot exporting
 - [ ] Konami Code support
