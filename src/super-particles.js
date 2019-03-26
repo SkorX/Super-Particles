@@ -1,7 +1,8 @@
 /* -----------------------------------------------
-/* Author : Skor_X - skorx.ga
+/* Author: Artur Zoremba (Skor_X) - skorx.ga
 /* MIT license: http://opensource.org/licenses/MIT
-/* GitHub : https://github.com/SkorX/Super-Particles
+/* GitHub: https://github.com/SkorX/Super-Particles
+/* Page: https://skorx.github.io/Super-Particles
 /* v0.1.0
 /* ----------------------------------------------- */
 
