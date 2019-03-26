@@ -1,18 +1,18 @@
 var canvas, demo, options;
 
 var demoOptions = {
-    count: 50,
+    count: 100,
 
     maxVelocity:       1,
     maxSize:           30,
     maxStrokeSize:     10,
     maxImageSize:      25,
-    force:             (Math.random() > 0.7) ? 50 : 1, //-((p._apperance.shape.size + p._apperance.shape.stroke.width) / 35 * 0.25),    //Math.random() * 0.15,
-    isBouncing:        false,                          //Math.random() > 0.5 ? true : false;
-    collisionSlowdown: true,
+    force:             0,       //-((p._apperance.shape.size + p._apperance.shape.stroke.width) / 35 * 0.25),    //Math.random() * 0.15,
+    isBouncing:        Math.random() > 0.5 ? true : false,
+    collisionSlowdown: Math.random() > 0.5 ? true : false,
 };
 
-function prepareParticle(image) {
+function prepareParticle(c) {
     var p = new superParticle("auto-generated", {
         
     });
@@ -68,43 +68,52 @@ function prepareParticle(image) {
         }
     }
 
-    if (image && (Math.random() > 0.7 || p._apperance.shape.type == undefined)) {
+    if (c == 0 || Math.random() > 0.7 || p._apperance.shape.type == undefined) {
         p._apperance.image.size    = (Math.random() * (demoOptions.maxImageSize - 10)) + 10;
         p._apperance.image.opacity = 1; //(Math.random() * 0.5) + 0.5;
 
+        if (c == 0)
+            p._apperance.image.size = demoOptions.maxImageSize * 2;
 
         var cImg = document.createElement('canvas');
         cImg.width  = p._apperance.image.size;
         cImg.height = p._apperance.image.size;
 
         var ctx = cImg.getContext("2d");
-        ctx.drawImage(image,
-            0, 0, image.naturalWidth, image.naturalHeight,
+        ctx.drawImage(testImage,
+            0, 0, testImage.naturalWidth, testImage.naturalHeight,
             0, 0, cImg.width, cImg.height);
 
         p._apperance.image.data = cImg;
     }
 
-    p._gravity.force = demoOptions.force;
+    p._gravity.force = (c % 4 == 0) ? 50 : 1; //demoOptions.force;
 
     p._apperance.opacity.value   = (Math.random() * 0.5) + 0.5;
     p._apperance.behavior.bounce = demoOptions.isBouncing;
 
-
-    if (false && c == 0) {
+    if (c == 0) {
         p._position.x    = demo._canvas.width  / 2;
         p._position.y    = demo._canvas.height / 2;
         p._movement.vx   = 0;
         p._movement.vy   = 0;
-        p._gravity.force = 500000;
+        p._gravity.force = 500;
         p._apperance.shape.type = "circle";
-        p._apperance.shape.size = maxSize * 2.5;
+        p._apperance.shape.size = demoOptions.maxSize * 2.5;
         p._apperance.shape.color = "black";
         p._apperance.shape.stroke.width = 2;
         p._apperance.shape.stroke.color = "lightgray";
     }
 
     return p;
+}
+
+function initalize() {
+    var c = demoOptions.count;
+    while (c--) {
+        //adding particle to engine array
+        demo.addParticle(prepareParticle(c));
+    }
 }
 
 window.onload = function () {
@@ -128,20 +137,16 @@ window.onload = function () {
         .addEventListener('click', function (e) {
             if (demo._particles.length)
                 demo.removeParticle(demo._particles[demo._particles.length - 1]);
-        })
+        });
     document
         .querySelector("#controls #addParticle")
         .addEventListener('click', function (e) {
             demo.addParticle(prepareParticle());
-        })
+        });
 
-    var testImage = new Image();
-    testImage.onload = function () {
-        var c = demoOptions.count;
-        while (c--) {
-            //adding particle to engine array
-            demo.addParticle(prepareParticle(testImage));
-        }
-    };
-    testImage.src = "test_image.png";
+
+    if (testImage.complete)
+        initalize();
+    else
+        testImage.onload = initalize;
 };
