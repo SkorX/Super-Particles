@@ -109,8 +109,7 @@ function prepareParticle(c) {
 }
 
 function initalize() {
-    var c = demoOptions.count;
-    while (c--) {
+    for (var c = 0; c < demoOptions.count; c--) {
         //adding particle to engine array
         demo.addParticle(prepareParticle(c));
     }
@@ -135,8 +134,7 @@ window.onload = function () {
     document
         .querySelector("#controls #removeParticle")
         .addEventListener('click', function (e) {
-            if (demo._particles.length)
-                demo.removeParticle(demo._particles[demo._particles.length - 1]);
+            demo.removeParticle(true);
         });
     document
         .querySelector("#controls #addParticle")
