@@ -576,15 +576,22 @@ var superParticles = function (canvas, options) {
     };
 
     this.removeParticle = function (particle) {
-        if (!(particle instanceof superParticle))
-            throw new Error("Particle have to be a superParticle instance.");
+        if (particle === true) {
+            //removing last particle
+            this._particles.pop();
 
-        //removing specified particle
-        var index = this._particles.indexOf(particle);
-        if (index !== -1)
-            this._particles.splice(index, 1);
+            return this;
+        }
+        else if (particle instanceof superParticle) {
+            //removing specified particle
+            var index = this._particles.indexOf(particle);
+            if (index !== -1)
+                this._particles.splice(index, 1);
+            
+            return this;
+        }
 
-        return this;
+        throw new Error("Particle have to be a superParticle instance.");
     };
 
     //events
