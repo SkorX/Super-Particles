@@ -853,8 +853,6 @@ var superParticles = function (canvas, options) {
 
         this._particlesCount = this._particles.length;
 
-        var avgSpeed = 0;
-
         //logic / particles processing
         for (var i = 0; i < this._particlesCount; i++) {
             //particles interactions
@@ -865,12 +863,7 @@ var superParticles = function (canvas, options) {
 
             this._particles[i].checkPosition(this._canvas.width, this._canvas.height);
             this._particles[i].update();
-
-            avgSpeed += Math.sqrt(Math.sqr(this._particles[i]._movement.vx) + Math.sqr(this._particles[i]._movement.vy));
         }
-
-        avgSpeed /= this._particlesCount;
-        console.log(avgSpeed);
 
         this._drawing_Redraw();
         this._drawing_Diagnostic();
