@@ -407,7 +407,7 @@ var superParticles = function (canvas, options) {
     this._initialized = false;
 
     //defaults
-    this._defaults = {
+    this._settings = {
         particles: {
             count: 0,
         
@@ -881,8 +881,8 @@ var superParticles = function (canvas, options) {
 
         for (var i = 0; i < this._particlesCount; i++) {
             //line linking
-            if (this._defaults.linking.enabled) {
-                var maxDistanceSqr = Math.sqr(this._defaults.linking.max_distance);
+            if (this._settings.linking.enabled) {
+                var maxDistanceSqr = Math.sqr(this._settings.linking.max_distance);
 
                 for (var j = i + 1; j < this._particlesCount; j++) {
                     var distanceSqr =
@@ -895,9 +895,9 @@ var superParticles = function (canvas, options) {
                         this._canvas.ctx.beginPath();
                         this._canvas.ctx.moveTo(this._particles[i]._position.x, this._particles[i]._position.y);
                         this._canvas.ctx.lineTo(this._particles[j]._position.x, this._particles[j]._position.y);
-                        this._canvas.ctx.lineWidth   = this._defaults.linking.width;
-                        this._canvas.ctx.strokeStyle = this._defaults.linking.color;
-                        this._canvas.ctx.globalAlpha = this._defaults.linking.opacity * (1 - distanceSqr / maxDistanceSqr);
+                        this._canvas.ctx.lineWidth   = this._settings.linking.width;
+                        this._canvas.ctx.strokeStyle = this._settings.linking.color;
+                        this._canvas.ctx.globalAlpha = this._settings.linking.opacity * (1 - distanceSqr / maxDistanceSqr);
                         this._canvas.ctx.stroke();
 
                         this._canvas.ctx.restore();
@@ -915,8 +915,8 @@ var superParticles = function (canvas, options) {
     this._drawing_ClearCanvas = function () {
         this._canvas.ctx.save();
 
-        if (this._defaults.background.color) {
-            this._canvas.ctx.fillStyle             = this._defaults.background.color;
+        if (this._settings.background.color) {
+            this._canvas.ctx.fillStyle             = this._settings.background.color;
             this._canvas.ctx.globalAlpha           = 1.0;
             this._canvas.ctx.imageSmoothingEnabled = false;
             this._canvas.ctx.fillRect(0, 0, this._canvas.width, this._canvas.height);
@@ -925,13 +925,13 @@ var superParticles = function (canvas, options) {
             this._canvas.ctx.clearRect(0, 0, this._canvas.width, this._canvas.height);
         }
 
-        if (this._defaults.background.image) {
+        if (this._settings.background.image) {
             this._canvas.ctx.drawImage(
-                this._defaults.background.image,
-                this._defaults.background.imagePosition.x,
-                this._defaults.background.imagePosition.y,
-                this._defaults.background.imagePosition.width,
-                this._defaults.background.imagePosition.height);
+                this._settings.background.image,
+                this._settings.background.imagePosition.x,
+                this._settings.background.imagePosition.y,
+                this._settings.background.imagePosition.width,
+                this._settings.background.imagePosition.height);
         }
 
         this._canvas.ctx.restore();
@@ -1098,12 +1098,12 @@ var superParticles = function (canvas, options) {
         this._canvas.height = this._canvas.element.height = this._canvas.element.offsetHeight;
 
         //background image position recalculation
-        if (this._defaults.background.image) {
+        if (this._settings.background.image) {
             var canvasRatio = this._canvas.width / this._canvas.height;
-            var imageRatio  = this._defaults.background.image.naturalWidth / this._defaults.background.image.naturalHeight;
+            var imageRatio  = this._settings.background.image.naturalWidth / this._settings.background.image.naturalHeight;
 
             if (canvasRatio === imageRatio) {               //image same as canvas (fill whole canvas)
-                this._defaults.background.imagePosition = {
+                this._settings.background.imagePosition = {
                     x:      0,
                     y:      0,
                     width:  this._canvas.width,
@@ -1112,20 +1112,20 @@ var superParticles = function (canvas, options) {
             }
             else if (canvasRatio > imageRatio) {            //image more more portrait than canvas (fill on Y, center on X)
                 var centerX             = Math.round(this._canvas.width / 2);
-                var dimensionMultiplier = this._canvas.height / this._defaults.background.image.naturalHeight;
-                var halfBackground      = Math.floor((this._defaults.background.image.width * dimensionMultiplier) / 2);
+                var dimensionMultiplier = this._canvas.height / this._settings.background.image.naturalHeight;
+                var halfBackground      = Math.floor((this._settings.background.image.width * dimensionMultiplier) / 2);
     
                 that._.workspace = {
                     x:      0,
                     leyft:  centerX - halfBackground,
-                    width:  Math.floor(this._defaults.background.image.width * dimensionMultiplier),
+                    width:  Math.floor(this._settings.background.image.width * dimensionMultiplier),
                     height: this._canvas.height
                 };
             }
             else {                                          //image more more landscape than canvas (fill on X, center on Y)
                 var centerY             = Math.round(this._canvas.height / 2);
-                var dimensionMultiplier = this._canvas.width / this._defaults.background.image.width;
-                var halfBackground      = Math.floor((this._defaults.background.image.height * dimensionMultiplier) / 2);
+                var dimensionMultiplier = this._canvas.width / this._settings.background.image.width;
+                var halfBackground      = Math.floor((this._settings.background.image.height * dimensionMultiplier) / 2);
     
                 that._.workspace = {
                     x:      centerY - halfBackground,
