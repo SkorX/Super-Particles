@@ -116,6 +116,8 @@ var superParticle = function (tag, options) {
             bounce:              true,
             slowDownOnCollision: false,
         },
+
+        _size: 0,
     };
 
     //// === PUBLIC VARIABLES ===
@@ -182,13 +184,7 @@ var superParticle = function (tag, options) {
     };
 
     this.size = function () {
-        var shapeSize = (this._apperance.shape.type != undefined && this._apperance.shape.color) ?
-            this._apperance.shape.size + this._apperance.shape.stroke.width : 0;
-
-        var imgSize = (this._apperance.image.data != undefined && this._apperance.image.opacity) ?
-            this._apperance.image.size : 0;
-
-        return Math.max(shapeSize, imgSize);
+        return this._apperance._size;
     }
 
     this.attractTo = function (other) {
@@ -374,7 +370,19 @@ var superParticle = function (tag, options) {
         // if ('maskVisible'          in options && typeof options.maskVisible === 'boolean')
         //     that.maskVisibiliy(options.maskVisible);
 
+        //TODO size recalculate & cache on properties change
+
         return true;
+    };
+
+    this._recalculateSize = function () {
+        var shapeSize = (this._apperance.shape.type != undefined && this._apperance.shape.color) ?
+            this._apperance.shape.size + this._apperance.shape.stroke.width : 0;
+
+        var imgSize = (this._apperance.image.data != undefined && this._apperance.image.opacity) ?
+            this._apperance.image.size : 0;
+
+        return this._apperance._size = Math.max(shapeSize, imgSize);
     };
 
     //utilities
