@@ -300,7 +300,7 @@ var superParticle = function (tag, options) {
         return this;
     };
 
-    this.draw = function (canvasContext) {
+    this.draw = function (canvasContext, enableImageSmoothing) {
         //drawing shapes
         if (this._apperance.shape.type !== undefined &&
             this._apperance.shape.size && this._apperance.shape.color) {
@@ -352,6 +352,7 @@ var superParticle = function (tag, options) {
             
             canvasContext.beginPath();
             canvasContext.globalAlpha = this._apperance.image.opacity;
+            canvasContext.imageSmoothingEnabled = (typeof enableImageSmoothing === "boolean") ? enableImageSmoothing : false;
 
             canvasContext.drawImage(
                 this._apperance.image.data,
@@ -450,7 +451,9 @@ var superParticles = function (canvas, options) {
                         min_value: 0,
                     }
                 }
-            }
+            },
+
+            smoothImages: false,
         },
 
         linking: {
@@ -907,7 +910,7 @@ var superParticles = function (canvas, options) {
 
             //particle drawing
             this._canvas.ctx.save();
-            this._particles[i].draw(this._canvas.ctx);
+            this._particles[i].draw(this._canvas.ctx, this._settings.particles.smoothImages);
             this._canvas.ctx.restore();
         }
     };
