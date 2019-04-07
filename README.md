@@ -30,11 +30,13 @@ It's pretty new project, but has implemented multiple core features.
 - [x] Particles attraction / gravity
 - [x] Particles warp (to the other side of canvas)
 - [x] Particles bouncing (from the edge of canvas)
+- [ ] Particles destroying when OoB
 - [x] Particles slowing down to initial speed (on warp or bounce)
 - [ ] Particles options loading
 - [x] Particles controlling methods
 - [ ] Particles properties alternation (eg. opacity)
 - [x] Event system
+- [ ] More engine events (particle add, particle remove, particle out of bounds)
 - [x] Window resize handling (for canvases that change it's size according to screen size)
 - [x] Diagnostics (fps meter, particles count, frame count)
 - [x] Low FPS mode (limit to max 30 FPS)
