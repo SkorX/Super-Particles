@@ -97,7 +97,7 @@ function prepareParticle(c) {
         p._position.y    = demo._canvas.height / 2;
         p._movement.vx   = 0;
         p._movement.vy   = 0;
-        p._gravity.force = -500;
+        p._gravity.force = 500;
         p._apperance.shape.type = "circle";
         p._apperance.shape.size = demoOptions.maxSize * 2.5;
         p._apperance.shape.color = "black";
@@ -109,7 +109,7 @@ function prepareParticle(c) {
 }
 
 function initalize() {
-    for (var c = 0; c < demoOptions.count; c--) {
+    for (var c = 0; c < demoOptions.count; c++) {
         //adding particle to engine array
         demo.addParticle(prepareParticle(c));
     }
