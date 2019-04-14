@@ -3,7 +3,7 @@
 /* MIT license: http://opensource.org/licenses/MIT
 /* GitHub: https://github.com/SkorX/Super-Particles
 /* Page: https://skorx.github.io/Super-Particles
-/* v0.1.0
+/* v0.2.0
 /* ----------------------------------------------- */
 
 // --- FULL OPTIONS EXPLANATION (with default values) (do not uncomment this code, preview only) ---
@@ -670,9 +670,9 @@ var superParticles = function (canvas, options) {
 };
 superParticles.version = {
     major:    0,
-    minor:    1,
+    minor:    2,
     revision: 0,
-    beta: false,
+    beta:  true,
 };
 
 //// === PUBLIC METHODS ===

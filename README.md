@@ -1,4 +1,8 @@
 # Super-Particles
+![Language](https://img.shields.io/badge/-javascript-blue.svg)
+![Lib size](https://img.shields.io/github/size/SkorX/Super-Particles/src/super-particles.min.js.svg)
+![Version](https://img.shields.io/github/manifest-json/v/SkorX/Super-Particles.svg)
+![License](https://img.shields.io/github/license/SkorX/Super-Particles.svg)
 
 ### JavaScript library for creating highly customizable particles.
 -----
