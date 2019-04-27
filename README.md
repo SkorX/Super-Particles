@@ -1,6 +1,7 @@
 # Super-Particles
 ![Language](https://img.shields.io/badge/-javascript-blue.svg)
-![Lib size](https://img.shields.io/github/size/SkorX/Super-Particles/src/super-particles.min.js.svg)
+![Lib size](https://img.shields.io/github/size/SkorX/Super-Particles/dist/super-particles.js.svg)
+![Lib size (minified)](https://img.shields.io/github/size/SkorX/Super-Particles/dist/super-particles.min.js.svg?color=blue&label=size%20%28minified%29&logoColor=blue)
 ![Version](https://img.shields.io/github/manifest-json/v/SkorX/Super-Particles.svg)
 ![License](https://img.shields.io/github/license/SkorX/Super-Particles.svg)
 
