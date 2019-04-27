@@ -13,7 +13,7 @@ var demoOptions = {
 };
 
 function prepareParticle(c) {
-    var p = new superParticle("auto-generated", {
+    var p = new SuperParticle("auto-generated", {
         
     });
 
@@ -121,7 +121,7 @@ window.onload = function () {
 
     };
 
-    demo = new superParticles(canvas, options)
+    demo = new SuperParticles(canvas, options)
         .addEventListener("diagnostics", function (data) {
             var diagBox = document.querySelector("#diag");
 
