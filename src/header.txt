@@ -1,0 +1,61 @@
+/* -----------------------------------------------
+/* Author: Artur Zoremba (Skor_X) - skorx.ga
+/* MIT license: http://opensource.org/licenses/MIT
+/* GitHub: https://github.com/SkorX/Super-Particles
+/* Page: https://skorx.github.io/Super-Particles
+/* v0.2.0
+/* ----------------------------------------------- */
+
+// --- FULL OPTIONS EXPLANATION (with default values) (do not uncomment this code, preview only) ---
+// {
+//     particles: {
+//         count:                       0,              (number)
+//         properties: {
+//             shape: {
+//                 type:                "none",         (string, ("none" || "circle" || "square"))
+//                 size:                25,             (number)
+//                 color:               "#FFFFFF",      (string, [#colorString])
+//                 stroke: {
+//                     width:           0,              (number)
+//                     color:           "#000000",      (string, [#colorString])
+//                 }
+//             }
+//             image: {
+//                 data:                undefined,      (undefined || HTMLImageElement)
+//                 size:                15,             (number)
+//                 opacity:             1,              (number, (0 < val <= 1))
+//             }
+//             motion: {
+//                 speed:               8,              (number, (0 <= val))
+//                 min_speed:           undefined,      (number, val < speed)
+//                 bouncing:            true,           (boolean)
+//                 slowDownOnCollision: false,          (boolean)
+//                 vx:                  undefined,      (undefined || number, number: (0 < val <= 1))
+//                 vy:                  undefined,      (undefined || number, number: (0 < val <= 1))
+//                 vx_min:              undefined,      (undefined || number, number: (0 < val <= 1))
+//                 vy_min:              undefined,      (undefined || number, number: (0 < val <= 1))
+//             }
+//             opacity: {
+//                 value:               1,              (number, (0 < val <= 1))
+//                 alternation: {
+//                     enabled:         true,           (boolean)
+//                     speed:           1,              (number)
+//                     min_value:       0,              (number)
+//                 }
+//             }
+//         }
+//     }
+//     linking: {
+//         enabled:                     true,           (boolean)
+//         max_distance:                150,            (numbar)
+//         color:                       "#FFFFFF",      (string, [#colorString])
+//         width:                       1.5,            (number)
+//         opacity:                     0.6,            (number, (0 < val <= 1))
+//     }
+//     attraction: {
+//         enabled:                     true            (boolean)
+//         rotateX:                     500,            (numbar)
+//         rotateY:                     500,            (numbar)
+//     }
+// }
+
