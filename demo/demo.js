@@ -13,7 +13,7 @@ var demoOptions = {
 };
 
 function prepareParticle(c) {
-    var p = new superParticle("auto-generated", {
+    var p = new SuperParticle("auto-generated", {
         
     });
 
@@ -109,8 +109,7 @@ function prepareParticle(c) {
 }
 
 function initalize() {
-    var c = demoOptions.count;
-    while (c--) {
+    for (var c = 0; c < demoOptions.count; c++) {
         //adding particle to engine array
         demo.addParticle(prepareParticle(c));
     }
@@ -122,7 +121,7 @@ window.onload = function () {
 
     };
 
-    demo = new superParticles(canvas, options)
+    demo = new SuperParticles(canvas, options)
         .addEventListener("diagnostics", function (data) {
             var diagBox = document.querySelector("#diag");
 
@@ -135,8 +134,7 @@ window.onload = function () {
     document
         .querySelector("#controls #removeParticle")
         .addEventListener('click', function (e) {
-            if (demo._particles.length)
-                demo.removeParticle(demo._particles[demo._particles.length - 1]);
+            demo.removeParticle(true);
         });
     document
         .querySelector("#controls #addParticle")

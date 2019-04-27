@@ -1,0 +1,28 @@
+{
+  "name": "super-particles",
+  "version": "0.2.0",
+  "description": "JavaScript library for creating highly customizable particles.",
+  "main": "src/super-particles.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SkorX/Super-Particles.git"
+  },
+  "author": "Artur Zoremba (Skor_X)",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/SkorX/Super-Particles/issues"
+  },
+  "homepage": "https://github.com/SkorX/Super-Particles#readme",
+  "devDependencies": {
+    "del": "^4.1.0",
+    "fs": "0.0.1-security",
+    "gulp": "^4.0.0",
+    "gulp-concat": "^2.6.1",
+    "gulp-header": "^2.0.7",
+    "gulp-strip-comments": "^2.5.2",
+    "gulp-uglify": "^3.0.2"
+  }
+}

@@ -59,10 +59,444 @@
 //     }
 // }
 
+var Images = {
+    /**
+     * Converts image of any type (canvas, image, video) into canvas. If image is cavas, it will be copied.
+     * 
+     * @param {(HTMLCanvasElement|HTMLImageElement|HTMLVideoElement)} image - Image to convert.
+     * @returns {HTMLCanvasElement} Canvas created for provided image.
+     */
+    getCanvasForImage: function (image) {
+        if (!(image instanceof HTMLCanvasElement) &&
+            !(image instanceof HTMLImageElement)  &&
+            !(image instanceof HTMLVideoElement))
+            throw new Error("Can't convert image, because it is in wrong format.");
+
+        var resultCanvas    = document.createElement("canvas");
+        var resultCanvasCtx = resultCanvas.getContext("2d");
+
+        if (image instanceof HTMLCanvasElement) {
+            resultCanvas.width  = image.width;
+            resultCanvas.height = image.height;
+        }
+        else if (image instanceof HTMLImageElement) {
+            if (image.complete === false || image.naturalWidth === undefined || image.naturalWidth === 0)
+                throw new Error("Passed image is broken.");
+
+            resultCanvas.width  = image.naturalWidth;
+            resultCanvas.height = image.naturalHeight;
+        }
+        else if (image instanceof HTMLVideoElement) {
+            if (image.videoWidth === undefined || image.videoWidth === 0)
+                throw new Error("Passed video is broken.");
+
+            resultCanvas.width  = image.videoWidth;
+            resultCanvas.height = image.videoHeight;
+        }
+
+        resultCanvasCtx.drawImage(image, 0, 0);
+
+        try {
+            resultCanvasCtx.getImageData(0, 0, 1, 1);
+        }
+        catch (e) {
+            if (e.name === "SecurityError")
+                throw new TaintedImageError("Loaded image causes security errors. Load image from the same domain or allow for cross-origin data.");
+        }
+
+        return resultCanvas;
+    },
+
+    /**
+     * Converts image into another type of image and executes callback when finished.
+     * 
+     * @param {(HTMLCanvasElement|HTMLImageElement|HTMLVideoElement)} image - Image to convert.
+     * @param {function} targetType - Target type of image to convert to.
+     * @param {function} callback - Callback with result of image conversion.
+     */
+    convertImage: function (image, targetType, callback) {
+        if (!(image instanceof HTMLCanvasElement) &&
+            !(image instanceof HTMLImageElement)  &&
+            !(image instanceof HTMLVideoElement)  &&
+            imgFromStr === false)
+            throw new Error("Can't convert image, because it is in wrong format.");
+
+        if (targetType !== HTMLCanvasElement &&
+            targetType !== HTMLImageElement &&
+            targetType !== Image)
+            throw new Error("Can't convert image, because targetType is incorrect.");
+
+        var moveCanvas = Images.getCanvasForImage(image);
+
+        if (targetType === HTMLCanvasElement) {
+            setTimeout(function () { callback.call(this, moveCanvas); }.bind(Images));
+        }
+        else if (targetType === HTMLImageElement || targetType === Image) {
+            var newImg = new Image(moveCanvas.width, moveCanvas.height);
+            newImg.onload = function () {
+                callback.call(Images, newImg);
+            }.bind(this);
+            newImg.onerror = function () {
+                throw new Error("While converting an image to HTMLImageElement, error has occured.");
+            };
+            newImg.src = moveCanvas.toDataURL();
+        }
+
+        return Images;
+    },
+
+    /**
+     * Scales canvas image to target maximal size.
+     * 
+     * @param {HTMLCanvasElement} imageCanvas - Canvas to resize.
+     * @param {numbar} maxWidth - Target max width of new image
+     * @param {numbar} maxHeight - Target max height of new image
+     */
+    getScaledDownImage: function (imageCanvas, maxWidth, maxHeight) {
+        if (typeof imageCanvas === "undefined" || !(imageCanvas instanceof HTMLCanvasElement))
+            return false;
+
+        var resultCanvas = Images.getCanvasForImage(imageCanvas);
+
+        if (imageCanvas.width > maxWidth || imageCanvas.height > maxHeight) {
+            var sizeRatio = imageCanvas.width / imageCanvas.height;
+            var newWidth  = imageCanvas.width;
+            var newHeight = imageCanvas.height;
+
+            if (newWidth > maxWidth) {
+                newWidth  = maxWidth;
+                newHeight = newWidth * (1 / sizeRatio);
+            }
+
+            if (newHeight > maxHeight) {
+                newHeight = maxHeight;
+                newWidth  = newHeight * sizeRatio;
+            }
+
+            resultCanvas.width  = newWidth;
+            resultCanvas.height = newHeight;
+            resultCanvas.getContext('2d').drawImage(imageCanvas, 0, 0, newWidth, newHeight);
+        }
+
+        return resultCanvas;
+    }
+};
+
+function TaintedImageError(message, innerError) {
+    Error.call(this, message);
+
+    this.name       = "TaintedImageError";
+    this.innerError = innerError;
+}
+TaintedImageError.prototype = Object.create(Error.prototype);
+TaintedImageError.prototype.toString = function () {
+    return this.name + ': "' + this.message + '"';
+}
+
+Math.sqr = function (x) {
+    return x * x;
+};
+Math.sqr3 = function (x) {
+    return x * x * x;
+};
+
+var SuperParticle = function (tag, options) {
+    "use strict";
+
+    if (!(this instanceof SuperParticle))
+        throw new Error("SuperParticle have to be executed as a class. Use new keyword.");
+
+    if (typeof options !== "object")
+        throw new Error("Options are not valid object element.");
+
+    this._position = {              
+        x: undefined,
+        y: undefined,
+    };
+
+    this._movement = {              
+        vx: undefined,
+        vy: undefined,
+
+        initialSpeedSqr: undefined, 
+    };
+
+    this._gravity = {
+        force: 0,                   
+    };
+
+    this._apperance = {
+        shape: {
+            type:  undefined,       
+            size:  0,
+            color: undefined,
+            stroke: {
+                width: 0,
+                color: undefined,
+            }
+        },
+        image: {
+            sourceData: undefined,  
+            data:       undefined,  
+            size:       0,
+            opacity:    0,
+        },
+        opacity: {
+            value: 1,
+
+            alternation: {
+                speed:     0,       
+                min_value: 0,
+            }
+        },
+
+        behavior: { 
+            bounce:              true,
+            slowDownOnCollision: false,
+        },
+
+        _size: 0,
+    };
+
+    this.tag = undefined;
+
+    if (typeof tag !== "string")
+        throw new Error("Tag have to be a valid string.");
+
+    this.tag = tag;
+    this._loadOptions(options);
+
+    return this;
+};
+
+SuperParticle.prototype.setSpeed = function (targetSpeed) {
+    if (!isFinite(targetSpeed))
+        throw new Error("Speed have to be finite number.");
+
+    var currentSpeed = Math.sqrt(Math.sqr(this._movement.vx) + Math.sqr(this._movement.vy));
+    var divider = currentSpeed / targetSpeed;
+
+    this._movement.vx /= divider;
+    this._movement.vy /= divider;
+
+    this._movement.initialSpeedSqr = Math.sqr(targetSpeed);
+
+    return this;
+};
+
+SuperParticle.prototype.resetSpeed = function () {
+    var currentSpeedSqr = Math.sqr(this._movement.vx) + Math.sqr(this._movement.vy);
+
+    var divider = Math.sqrt(currentSpeedSqr / this._movement.initialSpeedSqr);
+
+    this._movement.vx /= divider;
+    this._movement.vy /= divider;
+
+    return this;
+};
+
+SuperParticle.prototype.applyForce = function (vx, vy, changeInitialSpeed) {
+    changeInitialSpeed = (typeof changeInitialSpeed === "boolean") ? changeInitialSpeed : false;
+
+    if (isFinite(vx) && isFinite(vy)) {
+        this._movement.vx += vx;
+        this._movement.vy += vy;
+
+                if (changeInitialSpeed)
+            this._movement.initialSpeedSqr = Math.sqr(this._movement.vx) + Math.sqr(this._movement.vy);
+    }
+
+    return this;
+};
+
+SuperParticle.prototype.size = function () {
+    return this._apperance._size;
+}
+
+SuperParticle.prototype.attractTo = function (other) {
+    if (this._gravity.force == 0 || other._gravity.force == 0)
+        return this;
+
+    if (this._position.x === other._position.x &&
+        this._position.y === other._position.y)
+        return this;
+
+    var distanceSqr =
+        Math.sqr(this._position.x - other._position.x) +
+        Math.sqr(this._position.y - other._position.y);
+
+    if (distanceSqr > Math.SQRT2 && isFinite(distanceSqr)) {
+        var gravityForce = (this._gravity.force * other._gravity.force) / distanceSqr;
+
+        if (gravityForce <= 0)
+            gravityForce = 0.01;
+
+        if (gravityForce < 0.01 || gravityForce > 10)       
+            return this;
+
+        var xDiff = other._position.x - this._position.x;
+        var yDiff = other._position.y - this._position.y;
+
+        var distance = Math.sqrt(distanceSqr);
+
+        this.applyForce(
+            ((xDiff / distance) * (gravityForce / this._gravity.force)),
+            ((yDiff / distance) * (gravityForce / this._gravity.force)));
+
+        other.applyForce(
+            -((xDiff / distance) * (gravityForce / other._gravity.force)),
+            -((yDiff / distance) * (gravityForce / other._gravity.force)));
+    }
+
+    return this;
+};
+
+SuperParticle.prototype.update = function () {
+    this._position.x += this._movement.vx;
+    this._position.y += this._movement.vy;
+
+    return this;
+};
+
+SuperParticle.prototype.checkPosition = function (canvasWidth, canvasHeight) {
+    if (!isFinite(canvasWidth) || !isFinite(canvasHeight))
+        return this;
+
+    var collision = false;
+    var size = this.size();
+    var radius = size / 2;
+
+    if (this._apperance.behavior.bounce) {
+        if (this._position.x + radius >= canvasWidth && this._movement.vx > 0) {
+            this._movement.vx = -this._movement.vx;
+            collision = true;
+        }
+        else if (this._position.x - radius <= 0 && this._movement.vx < 0) {
+            this._movement.vx = -this._movement.vx;
+            collision = true;
+        }
+
+        if (this._position.y + radius >= canvasHeight && this._movement.vy > 0) {
+            this._movement.vy = -this._movement.vy;
+            collision = true;
+        }
+        else if (this._position.y - radius <= 0 && this._movement.vy < 0) {
+            this._movement.vy = -this._movement.vy;
+            collision = true;
+        }
+    }
+    else {
+        if (this._position.x - radius >= canvasWidth) {
+            this._position.x = -radius;
+            collision = true;
+        }
+        else if (this._position.x + radius <= 0) {
+            this._position.x = canvasWidth + radius;
+            collision = true;
+        }
+
+        if (this._position.y - radius >= canvasHeight) {
+            this._position.y = -radius;
+            collision = true;
+        }
+        else if (this._position.y + radius <= 0) {
+            this._position.y = canvasHeight + radius;
+            collision = true;
+        }
+    }
+
+    if (collision && this._apperance.behavior.slowDownOnCollision)
+        this.resetSpeed();
+
+    return this;
+};
+
+SuperParticle.prototype.draw = function (canvasContext, enableImageSmoothing) {
+    if (this._apperance.shape.type !== undefined &&
+        this._apperance.shape.size && this._apperance.shape.color) {
+
+        canvasContext.beginPath();
+
+        if (this._apperance.shape.type === "circle") {
+            canvasContext.arc(
+                this._position.x,
+                this._position.y,
+                this._apperance.shape.size / 2,
+                0,
+                2 * Math.PI);
+        }
+        else {
+            var centerPositionAdjustment = this._apperance.shape.size / 2;
+
+            canvasContext.rect(
+                this._position.x - centerPositionAdjustment,
+                this._position.y - centerPositionAdjustment,
+                this._apperance.shape.size,
+                this._apperance.shape.size);
+        }
+
+        canvasContext.globalAlpha = this._apperance.opacity;
+
+        canvasContext.fillStyle = this._apperance.shape.color;
+        canvasContext.fill();
+
+        if (this._apperance.shape.stroke.width && this._apperance.shape.stroke.color) {
+            canvasContext.lineWidth = this._apperance.shape.stroke.width;
+            canvasContext.strokeStyle = this._apperance.shape.stroke.color;
+            canvasContext.stroke();
+        }
+    }
+
+    if (this._apperance.image.data !== undefined &&
+        this._apperance.image.size && this._apperance.image.opacity) {
+
+        var ratio = this._apperance.image.data.height / this._apperance.image.data.width;
+        var targetHeight = this._apperance.image.size * ratio;
+
+        var centerPosAdjX = this._apperance.image.size / 2;
+        var centerPosAdjY = targetHeight / 2;
+
+                canvasContext.beginPath();
+        canvasContext.globalAlpha = this._apperance.image.opacity;
+        canvasContext.imageSmoothingEnabled = (typeof enableImageSmoothing === "boolean") ? enableImageSmoothing : false;
+
+        canvasContext.drawImage(
+            this._apperance.image.data,
+            this._position.x - centerPosAdjX,
+            this._position.y - centerPosAdjY,
+            this._apperance.image.size,
+            targetHeight);
+    }
+
+    return this;
+};
+
+SuperParticle.prototype._loadOptions = function (options) {
+    if (typeof options === 'undefined')
+        return false;
+
+    return true;
+};
+
+SuperParticle.prototype._recalculateSize = function () {
+    var shapeSize = (this._apperance.shape.type != undefined && this._apperance.shape.color) ?
+        this._apperance.shape.size + this._apperance.shape.stroke.width : 0;
+
+    var imgSize = (this._apperance.image.data != undefined && this._apperance.image.opacity) ?
+        this._apperance.image.size : 0;
+
+    return this._apperance._size = Math.max(shapeSize, imgSize);
+};
+
+SuperParticle.prototype._calculateDistance = function (p1, p2) {
+    return Math.abs(
+             Math.sqrt(
+               Math.sqr(p1._position.x - p2._position.x) +
+               Math.sqr(p1._position.y - p2._position.y)));
+};
 var SuperParticles = function (canvas, options) {
     "use strict";
 
-    //init checks
     if (!(this instanceof SuperParticles))
         throw new Error("SuperParticles have to be executed as a class. Use new keyword.");
 
@@ -72,18 +506,16 @@ var SuperParticles = function (canvas, options) {
     if (typeof options !== "object")
         throw new Error("Options are not valid object element.");
 
-    //// === PRIVATE VARIABLES ===
     this._initialized = false;
 
-    //defaults
     this._settings = {
         particles: {
             count: 0,
-        
-            properties: {
+
+                    properties: {
                 shape: {
-                    type: "none",               //none | circle | square
-                    size: 25,                   //pixels
+                    type: "none",               
+                    size: 25,                   
 
                     color: "#FFFFFF",
                     stroke: {
@@ -92,30 +524,30 @@ var SuperParticles = function (canvas, options) {
                     },
                 },
                 image: {
-                    data:    undefined,         //HTMLCanvasElement
-                    size:    15,                //width of image in pixels (height is calculted using image's aspect ratio)
+                    data:    undefined,         
+                    size:    15,                
                     opacity: 1,
                 },
 
                 motion: {
-                    speed:     8,               //number of pixels per second
-                    min_speed: undefined,       //minmal particle speed (undefined = no randomness)
+                    speed:     8,               
+                    min_speed: undefined,       
 
-                    bouncing:            true,  //determines if particles will be able to bounce on canvas borders
-                    slowDownOnCollision: false, //forces particles to keep it's speed (and only change direction)
+                    bouncing:            true,  
+                    slowDownOnCollision: false, 
 
-                    vx:     undefined,          //initial X velocity in range <-1;1> (undefined = random)
-                    vy:     undefined,          //initial Y velocity in range <-1;1> (undefined = random)
-                    vx_min: undefined,          //minimal X velocity in range <-1;1> (work only when vx is not undefined)
-                    vy_min: undefined,          //minimal Y velocity in range <-1;1> (work only when vy is not undefined)
+                    vx:     undefined,          
+                    vy:     undefined,          
+                    vx_min: undefined,          
+                    vy_min: undefined,          
                 },
 
                 opacity: {
-                    value: 1,                   //particle opacity
+                    value: 1,                   
 
                     alternation: {
                         enabled:   false,
-                        speed:     1,           //change per second
+                        speed:     1,           
                         min_value: 0,
                     }
                 }
@@ -126,7 +558,7 @@ var SuperParticles = function (canvas, options) {
 
         linking: {
             enabled:      true,
-            max_distance: 150,                  //max distance in pixels (to draw a link line)
+            max_distance: 150,                  
             color:        "#FFFFFF",
             width:        1.5,
             opacity:      0.6,
@@ -138,7 +570,7 @@ var SuperParticles = function (canvas, options) {
 
         background: {
             color: undefined,
-            image: undefined,                   //HTMLImageElement
+            image: undefined,                   
 
             imagePosition: {
                 x: 0,
@@ -148,10 +580,8 @@ var SuperParticles = function (canvas, options) {
             }
         }
 
-        //TODO some interactivity options
     };
 
-    //canvas data
     this._canvas = {
         element: undefined,
         ctx:     undefined,
@@ -160,7 +590,7 @@ var SuperParticles = function (canvas, options) {
         height:  0,
 
         drawing: {
-            stop:         true,             //true, because it's initial state of uninitialized engine
+            stop:         true,             
             limitTo30FPS: false,
 
             isResizeEventRunning: false,
@@ -168,49 +598,39 @@ var SuperParticles = function (canvas, options) {
         }
     };
 
-    //particles list
     this._particlesCount = 0;
     this._particles = [];
 
-    //callbacks
     this._callbacks = {
         initialized:   [],
         windowResized: [],
         diagnostics:   [],
 
-        //one time callbacks (for internal use)
         _initialized:   undefined,
         _windowResized: undefined,
         _diagnostics:   undefined,
     };
 
-    //keyboard data (shortcuts, etc.)
     this._keyboard = {
         queue: [],
     }
 
-    //diagnostic data
     this._diagData = {
-        fps:       0,           //current FPS
-        frame:     0,           //frame id
-        count:     0,           //particles count
-        startTime: Date.now(),  //drawing start time (new for each restart)
+        fps:       0,           
+        frame:     0,           
+        count:     0,           
+        startTime: Date.now(),  
 
-        _times: [],             //frames times
+        _times: [],             
     };
 
 
-    //// === PUBLIC VARIABLES ===
-    //events
-    this.onInitialized   = undefined;       //()
-    this.onWindowResized = undefined;       //()
-    this.onDiagnostics   = undefined;       //(diagnosticData)
+    this.onInitialized   = undefined;       
+    this.onWindowResized = undefined;       
+    this.onDiagnostics   = undefined;       
 
-    
-    //// === EVENT HANDLERS ===
+
     this._resizeHandler = function () {
-        //handler specially made to prevent constant redrawing on resize and prevent flickering on fast computers / browsers
-
         this._canvas.drawing.lastWindowResizeTime = Date.now();
 
         if (!this._canvas.drawing.isResizeEventRunning) {
@@ -222,26 +642,23 @@ var SuperParticles = function (canvas, options) {
 
     this._resizeEventProcess = function () {
         if (this._canvas.drawing.isResizeEventRunning && this._canvas.drawing.lastWindowResizeTime + 50 > Date.now()) {
-            setTimeout(this._resizeEventProcess, 50);                                   //we are still waiting
-            return;                                                                     //as we will call this function later we can close this right now
+            setTimeout(this._resizeEventProcess, 50);                                   
+            return;                                                                     
         }
 
         this._drawing_ClearCanvas();
 
-        //applying (removing) some size changing styles
         this._canvas.element.style.boxSizing = "content-box";
         this._canvas.element.style.padding   = "0";
 
-        //setting new canvas dimensions (we can do this even when editor is locked)
         this._canvas.width  = this._canvas.element.width  = this._canvas.element.offsetWidth;
         this._canvas.height = this._canvas.element.height = this._canvas.element.offsetHeight;
 
-        //background image position recalculation
         if (this._settings.background.image) {
             var canvasRatio = this._canvas.width / this._canvas.height;
             var imageRatio  = this._settings.background.image.naturalWidth / this._settings.background.image.naturalHeight;
 
-            if (canvasRatio === imageRatio) {               //image same as canvas (fill whole canvas)
+            if (canvasRatio === imageRatio) {               
                 this._settings.background.imagePosition = {
                     x:      0,
                     y:      0,
@@ -249,24 +666,24 @@ var SuperParticles = function (canvas, options) {
                     height: this._canvas.height
                 };
             }
-            else if (canvasRatio > imageRatio) {            //image more more portrait than canvas (fill on Y, center on X)
+            else if (canvasRatio > imageRatio) {            
                 var centerX             = Math.round(this._canvas.width / 2);
                 var dimensionMultiplier = this._canvas.height / this._settings.background.image.naturalHeight;
                 var halfBackground      = Math.floor((this._settings.background.image.width * dimensionMultiplier) / 2);
-                
-                that._.workspace = {
+
+                                that._.workspace = {
                     x:      0,
                     leyft:  centerX - halfBackground,
                     width:  Math.floor(this._settings.background.image.width * dimensionMultiplier),
                     height: this._canvas.height
                 };
             }
-            else {                                          //image more more landscape than canvas (fill on X, center on Y)
+            else {                                          
                 var centerY             = Math.round(this._canvas.height / 2);
                 var dimensionMultiplier = this._canvas.width / this._settings.background.image.width;
                 var halfBackground      = Math.floor((this._settings.background.image.height * dimensionMultiplier) / 2);
-    
-                that._.workspace = {
+
+                    that._.workspace = {
                     x:      centerY - halfBackground,
                     y:      0,
                     width:  that._.canvasSize.width,
@@ -275,7 +692,6 @@ var SuperParticles = function (canvas, options) {
             }
         }
 
-        //particles recalculation
         for (var i = 0; i < this._particles.length; i++) {
             this._particles[i].checkPosition(this._canvas.width, this._canvas.height);
         }
@@ -285,51 +701,39 @@ var SuperParticles = function (canvas, options) {
 
         this._handleEvent('windowResized');
     }.bind(this);
-    
-    //keyboard, mouse & touch
+
     this._keyDownHandler = function (e) {
         if (this._kc(e))
         return;
 
-        //DBG
-        //this._requestFrame(this._process);
     }.bind(this);
-    
-    this._kc = function (kbEvent) {
+
+        this._kc = function (kbEvent) {
         this._keyboard.queue.push(kbEvent.keyCode);
-        
-        if (this._keyboard.queue.length > 10)
+
+                if (this._keyboard.queue.length > 10)
         this._keyboard.queue.shift();
-        
-        if (this._keyboard.queue.toString() === "38,38,40,40,37,39,37,39,66,65") {
-            //TODO Konami Code handling
-            
+
+                if (this._keyboard.queue.toString() === "38,38,40,40,37,39,37,39,66,65") {
             return true;
         }
-        
-        return false;
+
+                return false;
     }.bind(this);
-    
-    
-    //// === CONSTRUCTOR ===
+
+
     this._canvas.element = canvas;
     this._canvas.ctx = canvas.getContext("2d");
 
     this._canvas.width  = this._canvas.element.width  = this._canvas.element.offsetWidth;
     this._canvas.height = this._canvas.element.height = this._canvas.element.offsetHeight;
 
-    //loading options passed by user
     this._loadOptions(options);
 
-    //filling engine with particles
-    //TODO
-
-    //events attach
     window.addEventListener('keydown', this._keyDownHandler);
     window.addEventListener('resize',  this._resizeHandler);
     this._resizeHandler();
 
-    //marking particles as prepared to run
     this._initialized = true;
     this.startDrawing();
 
@@ -342,13 +746,10 @@ SuperParticles.version = {
     beta:  true,
 };
 
-//// === PUBLIC METHODS ===
-//particles
 SuperParticles.prototype.addParticle = function (particle) {
     if (!(particle instanceof SuperParticle))
         throw new Error("Particle have to be a SuperParticle instance.");
 
-    //adding particle to collection
     this._particles.push(particle);
 
     return this;
@@ -356,24 +757,21 @@ SuperParticles.prototype.addParticle = function (particle) {
 
 SuperParticles.prototype.removeParticle = function (particle) {
     if (particle === true) {
-        //removing last particle
         this._particles.pop();
 
         return this;
     }
     else if (particle instanceof SuperParticle) {
-        //removing specified particle
         var index = this._particles.indexOf(particle);
         if (index !== -1)
             this._particles.splice(index, 1);
-        
-        return this;
+
+                return this;
     }
 
     throw new Error("Particle have to be a SuperParticle instance.");
 };
 
-//events
 SuperParticles.prototype.addEventListener = function (event, callback) {
     if (typeof event !== 'string' || typeof callback !== 'function')
         return this;
@@ -399,9 +797,8 @@ SuperParticles.prototype.removeEventListener = function (event, callback) {
     return this;
 };
 
-//drawing
 SuperParticles.prototype.startDrawing = function () {
-    if (!this._canvas.drawing.stop || !this._initialized)       //preventing animation, if drawing loop is running or engine is not initialized
+    if (!this._canvas.drawing.stop || !this._initialized)       
         return this;
 
     this._canvas.drawing.stop = false;
@@ -417,8 +814,7 @@ SuperParticles.prototype.stopDrawing = function () {
     return this;
 };
 
-//image export
-SuperParticles.prototype.getScreenshotData = function (callback, format, encoderOptions) {          //callback (imageData: base64 string | false)
+SuperParticles.prototype.getScreenshotData = function (callback, format, encoderOptions) {          
     if (!this._initialized) {
         this._execCallback(callback, [false]);
         return that;
@@ -430,7 +826,7 @@ SuperParticles.prototype.getScreenshotData = function (callback, format, encoder
     return that;
 };
 
-SuperParticles.prototype.getScreenshot = function (callback) {                                      //callback (image: HTMLImageElement | false)
+SuperParticles.prototype.getScreenshot = function (callback) {                                      
     if (typeof callback !== 'function')
         throw new Error("Callback parameter is not a function.");
 
@@ -449,129 +845,13 @@ SuperParticles.prototype.getScreenshot = function (callback) {                  
 };
 
 
-//// === PRIVATE METHODS ===
-//options
 SuperParticles.prototype._loadOptions = function (options) {
     if (typeof options === 'undefined')
         return false;
 
-    // if ('maskVisible'          in options && typeof options.maskVisible === 'boolean')
-    //     that.maskVisibiliy(options.maskVisible);
-
-    // if ('maskType'             in options && typeof options.maskType === 'string')
-    //     if (options.maskType === 'rectangle' || options.maskType === 'image' || options.maskType === 'rectangle-inner')
-    //         that._.mask.type = options.maskType;
-
-    // if ('maskAspectRatio'      in options) {
-    //     if (typeof options.maskAspectRatio === 'number' && options.maskAspectRatio > 0)
-    //         that._.mask.aspectRatio = options.maskAspectRatio;
-    //     else if (typeof options.maskAspectRatio === 'boolean' && options.maskAspectRatio === false)
-    //         that._.mask.aspectRatio = options.maskAspectRatio;
-    // }
-
-    // if ('maskOpacity'          in options && typeof options.maskOpacity === 'number')
-    //     if (options.maskOpacity >= 0.1 && options.maskOpacity <= 1)
-    //         that._.mask.opacity = options.maskOpacity;
-
-    // if ('maskColor'            in options && typeof options.maskColor === 'string')
-    //     if (window.colorHelper.getColorFromHex(options.maskColor) !== false) {
-    //         that._.mask.color = options.maskColor;
-    //         that._.mask.drawImage = that._maskRecolor(that._.mask.image);
-    //     }
-
-    // if ('maskImage'            in options && options.maskImage instanceof HTMLImageElement)
-    //     that.applyImageMask(maskImage);
-
-    // if ('maskGrabMargin'       in options && typeof options.maskGrabMargin === 'number')
-    //     if (options.maskGrabMargin >= 4 && options.maskGrabMargin <= 50)
-    //         that._.mask.grabMargin = options.maskGrabMargin;
-
-    // if ('maskTouchGrabMargin' in options && typeof options.maskTouchGrabMargin === 'number')
-    //     if (options.maskTouchGrabMargin >= 10 && options.maskTouchGrabMargin <= 100)
-    //         that._.mask.touchGrabMargin = options.maskTouchGrabMargin;
-
-    
-    // if ('maskQualityData'      in options) {
-    //     try {
-    //         if (typeof options.maskQualityData === 'undefined') {
-    //             that._.mask.qualityValues = undefined;
-    //             that._fieldQualityHandler(true);
-    //         }
-    //         else
-    //             that.setFieldQuality(options.maskQualityData);
-    //     } catch (e) { }
-    // }
-
-    // //theme options
-    // if ('theme'                in options && typeof options.theme === 'string') {
-    //     switch (options.theme) {        //we can't use build-in function (because it requests redraw, it may break script called from constructor (image is not loaded, but try to redraw))
-    //         case "dark": {
-    //             that._.theme.color = "#000000";
-    //             break;
-    //         }
-    //         case "light": {
-    //             that._.theme.color = "#FFFFFF";
-    //             break;
-    //         }
-    //         default: {
-    //             var colorCheck = new RegExp("^#([0-9A-F]{3}|[0-9A-F]{6})$", "i");
-    //             if (!colorCheck.test(options.theme))
-    //                 break;
-
-    //             that._.theme.color = options.theme;
-    //         }
-    //     }
-    // }
-
-    // if ('cornersType'          in options && typeof options.cornersType === 'string')
-    //     if (options.cornersType === 'none' || options.cornersType === 'bubbles' || options.cornersType === 'edges')
-    //         that._.theme.cornersType = options.cornersType;
-
-    // if ('cornersColor'         in options && typeof options.cornersColor === 'string')
-    //     if (window.colorHelper.getColorFromHex(options.cornersColor) !== false)
-    //         that._.theme.cornersColor = options.cornersColor;
-
-    // if ('cornersRadius'        in options && typeof options.cornersRadius === 'number')
-    //     if (options.cornersRadius > 0 && options.cornersRadius <= 50)
-    //         that._.theme.cornersRadius = options.cornersRadius;
-
-    // //animation options
-    // if ('waitAnimTimespan'     in options && typeof options.waitAnimTimespan === 'number')
-    //     if (options.waitAnimTimespan > 100)
-    //         that._.waitAnimation.phaseTimespan = options.waitAnimTimespan;
-
-    // if ('waitAnimSize'         in options && typeof options.waitAnimSize === 'number')
-    //     if (options.waitAnimSize > 0.01 && options.waitAnimSize <= 1)
-    //         that._.waitAnimation.size = options.waitAnimSize;
-    //     else if (options.waitAnimSize > 1)
-    //         that._.waitAnimation.size = 5;              //if (size > 1) we make animation on full canvas
-
-    // if ('waitAnimColor'        in options) {
-    //     if (typeof options.waitAnimColor === 'undefined')
-    //         that._.waitAnimation.color = undefined;
-    //     else if (typeof options.waitAnimColor === 'boolean' && options.waitAnimColor === false)
-    //         that._.waitAnimation.color = undefined;
-    //     else if (typeof options.waitAnimColor === 'string'  && window.colorHelper.getColorFromHex(options.waitAnimColor) !== false)
-    //         that._.waitAnimation.color = options.waitAnimColor;
-    // }
-
-    // //first we set fullscreen target and than check if we should turn that on
-    // if ('fullscreenTarget'     in options) {
-    //     if (typeof options.fullscreenTarget === 'undefined')
-    //         that._.fullscreen.target = document.documentElement;
-    //     else if (that._fullscreenAvailable(options.fullscreenTarget))
-    //         that._.fullscreen.target = options.fullscreenTarget;
-    // }
-
-    // if ('fullscreenEnabled'    in options && typeof options.fullscreenEnabled === 'boolean') {
-    //     if (options.fullscreenEnabled !== that._.fullscreen.enabled)
-    //         that.toggleFullscreen();
-    // }
-
     return true;
 };
 
-//callbacks & events
 SuperParticles.prototype._handleEvent = function (eventName, argArray, disableInner, disablePublic) {
     if (typeof eventName !== 'string')
         throw new Error("_handleEvent - Event name have to be a string value.");
@@ -581,23 +861,20 @@ SuperParticles.prototype._handleEvent = function (eventName, argArray, disableIn
 
     if (!disableInner) {
         var privateName = "_" + eventName;
-        
-        //executing internal callbacks (first, no async)
+
         if (privateName in this._callbacks && typeof this._callbacks[privateName] === 'function')
             this._callbacks[privateName].apply(this, argArray);
     }
-    
-    if (!disablePublic) {
+
+        if (!disablePublic) {
         var publicName = "on" + eventName.charAt(0).toUpperCase() + eventName.slice(1);
 
-        //executing public callbacks (from array)
-        if (eventName in this._callbacks) {        //don't have to check for function type (addEventListener do this)
+        if (eventName in this._callbacks) {        
             for (var i = 0; i < this._callbacks[eventName].length; i++) {
                 setTimeout(function (id) { (this._callbacks[eventName][id]).apply(this, argArray); }.bind(this), undefined, i);
             }
         }
 
-        //executing public callback (on... named)
         if (publicName in this && typeof this[publicName] === 'function')
             setTimeout(function () { (this[publicName]).apply(this, argArray); }.bind(this));
     }
@@ -615,7 +892,6 @@ SuperParticles.prototype._execCallback = function (callback, args) {
     }
 };
 
-//drawing
 SuperParticles.prototype._requestFrame = function (callback) {
     if (window.requestAnimationFrame)               window.requestAnimationFrame(callback.bind(this));
     else if (window.mozRequestAnimationFrame)       window.mozRequestAnimationFrame(callback.bind(this));
@@ -627,16 +903,13 @@ SuperParticles.prototype._requestFrame = function (callback) {
 };
 
 SuperParticles.prototype._process = function () {
-    if (this._canvas.drawing.stop)          //preventing particles processing when animation should be stopped
+    if (this._canvas.drawing.stop)          
         return;
 
     this._particlesCount = this._particles.length;
 
-    //logic / particles processing
     for (var i = 0; i < this._particlesCount; i++) {
-        //particles interactions
         for (var j = i + 1; j < this._particlesCount; j++) {
-            //attration
             this._particles[i].attractTo(this._particles[j]);
         }
 
@@ -647,7 +920,6 @@ SuperParticles.prototype._process = function () {
     this._drawing_Redraw();
     this._drawing_Diagnostic();
 
-    //request next animation frame
     this._requestFrame(this._process);
 };
 
@@ -655,11 +927,9 @@ SuperParticles.prototype._drawing_Redraw = function () {
     if (this._canvas.drawing.limitTo30FPS && this._diagData.frame % 2 != 0)
         return;
 
-    //clear canvas / draw canvas background
     this._drawing_ClearCanvas();
 
     for (var i = 0; i < this._particlesCount; i++) {
-        //line linking
         if (this._settings.linking.enabled) {
             var maxDistanceSqr = Math.sqr(this._settings.linking.max_distance);
 
@@ -670,8 +940,8 @@ SuperParticles.prototype._drawing_Redraw = function () {
 
                 if (distanceSqr <= maxDistanceSqr) {
                     this._canvas.ctx.save();
-                    
-                    this._canvas.ctx.beginPath();
+
+                                        this._canvas.ctx.beginPath();
                     this._canvas.ctx.moveTo(this._particles[i]._position.x, this._particles[i]._position.y);
                     this._canvas.ctx.lineTo(this._particles[j]._position.x, this._particles[j]._position.y);
                     this._canvas.ctx.lineWidth   = this._settings.linking.width;
@@ -684,7 +954,6 @@ SuperParticles.prototype._drawing_Redraw = function () {
             }
         }
 
-        //particle drawing
         this._canvas.ctx.save();
         this._particles[i].draw(this._canvas.ctx, this._settings.particles.smoothImages);
         this._canvas.ctx.restore();
@@ -717,15 +986,13 @@ SuperParticles.prototype._drawing_ClearCanvas = function () {
 };
 
 SuperParticles.prototype._drawing_Diagnostic = function () {
-    //frame count & particles count
     this._diagData.frame++;
 
     if (this._canvas.drawing.limitTo30FPS && this._diagData.frame % 2 != 0)
         return;
-        
-    this._diagData.count = this._particles.length;
 
-    //fps calculation
+            this._diagData.count = this._particles.length;
+
     var now = performance.now();
     while (this._diagData._times.length > 0 && this._diagData._times[0] <= now - 1000) {
         this._diagData._times.shift();
@@ -736,7 +1003,6 @@ SuperParticles.prototype._drawing_Diagnostic = function () {
         (this._diagData._times.length / ((now - this._diagData._times[0]) / 1000))
         .toFixed(2);
 
-    //rise event
     this._handleEvent("diagnostics", [{
         fps:       this._diagData.fps,
         frame:     (this._canvas.drawing.limitTo30FPS) ? parseInt(this._diagData.frame / 2) : this._diagData.frame,
