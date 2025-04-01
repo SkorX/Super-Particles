@@ -6,7 +6,8 @@
 /* v0.2.0
 /* ----------------------------------------------- */
 
-// --- FULL OPTIONS EXPLANATION (with default values) (do not uncomment this code, preview only) ---
+// --- OPTIONS EXPLANATION (with default values) (do not uncomment this code, preview only) ---
+// SuperParticles options:
 // {
 //     particles: {
 //         count:                       0,              (number)
@@ -59,9 +60,39 @@
 //     }
 // }
 
+// Single particle options:
+// {
+//     x:                      undefined,          (number)
+//     y:                      undefined,          (number)
+//
+//     vx:                     undefined,          (number)
+//     vy:                     undefined,          (number)
+//
+//     gravityForce:           0,                  (number)
+//
+//     apperance: {
+//         shapeType:          undefined,          (string, ("none" | "circle" | "square"))
+//         shapeSize:          0,                  (number, (0 <= val))
+//         shapeColor:         undefined           (string, [#colorString])
+//
+//         strokeWidth:        0,                  (number, (0 <= val))
+//         strokeColor:        undefined,          (string, [#colorString])
+//
+//         image:              undefined,          (undefined | HTMLImageElement)
+//         imageSize:          0,                  (number, (0 <= val))
+//         imageOpacity:       1,                  (number, (0 <= val <= 1))
+//
+//         opacity:            1,                  (number, (0 < val <= 1))
+//     }
+//     behavior: {
+//         bounce:             true,               (boolean)
+//         collisionSlowdown:  false,              (boolean)
+//     }
+// }
+
 var Images = {
     /**
-     * Converts image of any type (canvas, image, video) into canvas. If image is cavas, it will be copied.
+     * Converts image of any type (canvas, image, video) into canvas. If image is canvas, it will be copied.
      * 
      * @param {(HTMLCanvasElement|HTMLImageElement|HTMLVideoElement)} image - Image to convert.
      * @returns {HTMLCanvasElement} Canvas created for provided image.
@@ -117,8 +148,7 @@ var Images = {
     convertImage: function (image, targetType, callback) {
         if (!(image instanceof HTMLCanvasElement) &&
             !(image instanceof HTMLImageElement)  &&
-            !(image instanceof HTMLVideoElement)  &&
-            imgFromStr === false)
+            !(image instanceof HTMLVideoElement))
             throw new Error("Can't convert image, because it is in wrong format.");
 
         if (targetType !== HTMLCanvasElement &&
@@ -146,11 +176,11 @@ var Images = {
     },
 
     /**
-     * Scales canvas image to target maximal size.
+     * Scales down canvas image to target maximal size.
      * 
      * @param {HTMLCanvasElement} imageCanvas - Canvas to resize.
-     * @param {numbar} maxWidth - Target max width of new image
-     * @param {numbar} maxHeight - Target max height of new image
+     * @param {number} maxWidth - Target max width of new image.
+     * @param {number} maxHeight - Target max height of new image.
      */
     getScaledDownImage: function (imageCanvas, maxWidth, maxHeight) {
         if (typeof imageCanvas === "undefined" || !(imageCanvas instanceof HTMLCanvasElement))
@@ -175,8 +205,42 @@ var Images = {
 
             resultCanvas.width  = newWidth;
             resultCanvas.height = newHeight;
-            resultCanvas.getContext('2d').drawImage(imageCanvas, 0, 0, newWidth, newHeight);
+            resultCanvas
+                .getContext('2d')
+                .drawImage(imageCanvas, 0, 0, newWidth, newHeight);
         }
+
+        return resultCanvas;
+    },
+
+    /**
+     * Scales up or down image to target size or width (height will be calculated by aspect ratio).
+     * 
+     * @param {HTMLCanvasElement} imageCanvas - Canvas to resize.
+     * @param {number} width - Target width of rescaled image.
+     * @param {number} [height] - Target height of rescaled image (or undefined to keep aspect ratio).
+     */
+    getScaledImage: function (imageCanvas, width, height) {
+        if (typeof imageCanvas === "undefined" || !(imageCanvas instanceof HTMLCanvasElement))
+            return false;
+
+        if (!isFinite(width))
+            return Images.getCanvasForImage(imageCanvas);
+
+        var resultCanvas    = document.createElement("canvas");
+
+                resultCanvas.width = width;
+        if (!isFinite(height)) {
+            var ratio = imageCanvas.height / imageCanvas.width;
+            resultCanvas.height = width * ratio;
+        }       
+        else {
+            resultCanvas.height = height;
+        }
+
+        resultCanvas
+            .getContext('2d')
+            .drawImage(imageCanvas, 0, 0, resultCanvas.width, resultCanvas.height);
 
         return resultCanvas;
     }
@@ -193,10 +257,43 @@ TaintedImageError.prototype.toString = function () {
     return this.name + ': "' + this.message + '"';
 }
 
+/**
+ * Returns random number in [min; max) range.
+ * 
+ * @param {number} min - Minimal value.
+ * @param {number} max - Maximal value.
+ */
+Math.rand = function (min, max) {
+    return (Math.random() * (max - min)) + min;
+};
+
+/**
+ * Returns random integer number in [min; max] range.
+ * 
+ * @param {number} min - Minimal value.
+ * @param {number} max - Maximal value.
+ */
+Math.randInt = function (min, max) {
+    min = Math.ceil(min);
+    max = Math.floor(max);
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+/**
+ * Returns the square of the number.
+ * 
+ * @param {number} x - Value whose square is computed.
+ */
 Math.sqr = function (x) {
     return x * x;
 };
-Math.sqr3 = function (x) {
+
+/**
+ * Returns the cubic of the number.
+ * 
+ * @param {number} x - Value whose cubic is computed.
+ */
+Math.cub = function (x) {
     return x * x * x;
 };
 
@@ -239,7 +336,7 @@ var SuperParticle = function (tag, options) {
             sourceData: undefined,  
             data:       undefined,  
             size:       0,
-            opacity:    0,
+            opacity:    1,
         },
         opacity: {
             value: 1,
@@ -250,12 +347,12 @@ var SuperParticle = function (tag, options) {
             }
         },
 
-        behavior: { 
-            bounce:              true,
-            slowDownOnCollision: false,
-        },
-
         _size: 0,
+    };
+
+    this._behavior = {
+        bounce:              true,
+        slowdownOnCollision: false,
     };
 
     this.tag = undefined;
@@ -267,6 +364,31 @@ var SuperParticle = function (tag, options) {
     this._loadOptions(options);
 
     return this;
+};
+
+SuperParticle.prototype.getState = function () {
+    return JSON.parse(JSON.stringify({
+        position: this._position,
+        movement: this._movement,
+        gravity: this._gravity,
+        apperance: {
+            shape: this._apperance.shape,
+            image: {
+                data: this._apperance.image.sourceData.toDataURL(),
+                size: this._apperance.image.size,
+                opacity: this._apperance.image.opacity,
+            },
+            opacity: this._apperance.opacity,
+        },
+        size: this._apperance._size,
+        behavior: this._behavior,
+
+        tag: this.tag,
+    }));
+};
+
+SuperParticle.prototype.size = function () {
+    return this._apperance._size;
 };
 
 SuperParticle.prototype.setSpeed = function (targetSpeed) {
@@ -309,10 +431,6 @@ SuperParticle.prototype.applyForce = function (vx, vy, changeInitialSpeed) {
     return this;
 };
 
-SuperParticle.prototype.size = function () {
-    return this._apperance._size;
-}
-
 SuperParticle.prototype.attractTo = function (other) {
     if (this._gravity.force == 0 || other._gravity.force == 0)
         return this;
@@ -326,7 +444,7 @@ SuperParticle.prototype.attractTo = function (other) {
         Math.sqr(this._position.y - other._position.y);
 
     if (distanceSqr > Math.SQRT2 && isFinite(distanceSqr)) {
-        var gravityForce = (this._gravity.force * other._gravity.force) / distanceSqr;
+        var gravityForce = Math.abs(this._gravity.force * other._gravity.force) / distanceSqr;
 
         if (gravityForce <= 0)
             gravityForce = 0.01;
@@ -366,7 +484,7 @@ SuperParticle.prototype.checkPosition = function (canvasWidth, canvasHeight) {
     var size = this.size();
     var radius = size / 2;
 
-    if (this._apperance.behavior.bounce) {
+    if (this._behavior.bounce) {
         if (this._position.x + radius >= canvasWidth && this._movement.vx > 0) {
             this._movement.vx = -this._movement.vx;
             collision = true;
@@ -405,7 +523,7 @@ SuperParticle.prototype.checkPosition = function (canvasWidth, canvasHeight) {
         }
     }
 
-    if (collision && this._apperance.behavior.slowDownOnCollision)
+    if (collision && this._behavior.slowdownOnCollision)
         this.resetSpeed();
 
     return this;
@@ -472,8 +590,96 @@ SuperParticle.prototype.draw = function (canvasContext, enableImageSmoothing) {
 };
 
 SuperParticle.prototype._loadOptions = function (options) {
-    if (typeof options === 'undefined')
+    if (typeof options !== 'object')
         return false;
+
+    if ('x'             in options && isFinite(options.x))
+        this._position.x = options.x;
+
+    if ('y'             in options && isFinite(options.y))
+        this._position.y = options.y;
+
+    if ('vx'            in options && isFinite(options.vx)) {
+        this._movement.vx = options.vx;
+        this._movement.initialSpeedSqr = Math.sqr(this._movement.vx) + Math.sqr(this._movement.vy);
+    }
+
+    if ('vy'            in options && isFinite(options.vy)) {
+        this._movement.vy = options.vy;
+        this._movement.initialSpeedSqr = Math.sqr(this._movement.vx) + Math.sqr(this._movement.vy);
+    }
+
+    if ('gravityForce'  in options && isFinite(options.gravityForce))
+        this._gravity.force = options.gravityForce;
+
+    if (typeof options.apperance === "object") {
+        if ('shapeType'     in options.apperance) {
+            if (options.apperance.shapeType === "circle" || options.apperance.shapeType === "square")
+                this._apperance.shape.type = options.apperance.shapeType;
+            else if (options.apperance.shapeType === "none")
+                this._apperance.shape.type = undefined;
+        }
+
+        if ('shapeSize'     in options.apperance && isFinite(options.apperance.shapeSize)) {
+            if (options.apperance.shapeSize >= 0) {
+                this._apperance.shape.size = options.apperance.shapeSize;
+                this._recalculateSize();
+            }
+        }
+
+        if ('shapeColor'    in options.apperance && typeof options.apperance.shapeColor === "string")
+            this._apperance.shape.color = options.apperance.shapeColor;
+
+        if ('strokeWidth'   in options.apperance && isFinite(options.apperance.strokeWidth)) {
+            if (options.apperance.strokeWidth >= 0) {
+                this._apperance.shape.stroke.width = options.apperance.strokeWidth;
+                this._recalculateSize();
+            }
+        }
+
+        if ('strokeColor'   in options.apperance && typeof options.apperance.strokeColor === "string")
+            this._apperance.shape.stroke.color = options.apperance.strokeColor;
+
+        if ('image'         in options.apperance && options.apperance.image instanceof HTMLImageElement) {
+            try {
+                var image = Images.getCanvasForImage(options.apperance.image);
+                this._apperance.image.sourceData = image;
+
+                if (this._apperance.image.size)
+                    this._apperance.image.data = Images.getScaledImage(image, this._apperance.image.size);
+            }
+            catch (e) {
+                console.log("Particle image is unusable. Image won't be loaded.");
+            }
+        }
+
+        if ('imageSize'     in options.apperance && isFinite(options.apperance.imageSize)) {
+            if (options.apperance.imageSize >= 0) {
+                this._apperance.image.size = options.apperance.imageSize;
+                this._recalculateSize();
+
+                if (this._apperance.image.sourceData)
+                    this._apperance.image.data = Images.getScaledImage(this._apperance.image.sourceData, this._apperance.image.size);
+            }
+        }
+
+        if ('imageOpacity'  in options.apperance && isFinite(options.apperance.imageOpacity)) {
+            if (options.apperance.imageOpacity >= 0 && options.apperance.imageOpacity <= 1)
+                this._apperance.image.opacity = options.apperance.imageOpacity;
+        }
+
+        if ('opacity'       in options.apperance && isFinite(options.apperance.opacity))
+            if (options.apperance.opacity > 0 && options.apperance.opacity <= 1)
+                this._apperance.opacity.value = options.apperance.opacity;
+    }
+
+    if (typeof options.behavior === "object") {
+        if ('bounce'            in options.behavior && typeof options.behavior.bounce === "boolean")
+            this._behavior.bounce = options.behavior.bounce;
+
+        if ('collisionSlowdown' in options.behavior && typeof options.behavior.collisionSlowdown === "boolean")
+            this._behavior.slowdownOnCollision = options.behavior.collisionSlowdown;
+    }
 
     return true;
 };
@@ -494,6 +700,7 @@ SuperParticle.prototype._calculateDistance = function (p1, p2) {
                Math.sqr(p1._position.x - p2._position.x) +
                Math.sqr(p1._position.y - p2._position.y)));
 };
+
 var SuperParticles = function (canvas, options) {
     "use strict";
 
@@ -516,8 +723,8 @@ var SuperParticles = function (canvas, options) {
                 shape: {
                     type: "none",               
                     size: 25,                   
-
                     color: "#FFFFFF",
+
                     stroke: {
                         width: 0,
                         color: "#000000",
@@ -536,10 +743,11 @@ var SuperParticles = function (canvas, options) {
                     bouncing:            true,  
                     slowDownOnCollision: false, 
 
-                    vx:     undefined,          
-                    vy:     undefined,          
-                    vx_min: undefined,          
-                    vy_min: undefined,          
+                    direction: undefined,       
+                    vx:        undefined,       
+                    vy:        undefined,       
+                    vx_min:    undefined,       
+                    vy_min:    undefined,       
                 },
 
                 opacity: {
@@ -572,7 +780,7 @@ var SuperParticles = function (canvas, options) {
             color: undefined,
             image: undefined,                   
 
-            imagePosition: {
+            _imagePosition: {
                 x: 0,
                 y: 0,
                 width: 0,
@@ -659,7 +867,7 @@ var SuperParticles = function (canvas, options) {
             var imageRatio  = this._settings.background.image.naturalWidth / this._settings.background.image.naturalHeight;
 
             if (canvasRatio === imageRatio) {               
-                this._settings.background.imagePosition = {
+                this._settings.background._imagePosition = {
                     x:      0,
                     y:      0,
                     width:  this._canvas.width,
@@ -671,9 +879,9 @@ var SuperParticles = function (canvas, options) {
                 var dimensionMultiplier = this._canvas.height / this._settings.background.image.naturalHeight;
                 var halfBackground      = Math.floor((this._settings.background.image.width * dimensionMultiplier) / 2);
 
-                                that._.workspace = {
+                                this._settings.background._imagePosition = {
                     x:      0,
-                    leyft:  centerX - halfBackground,
+                    y:  centerX - halfBackground,
                     width:  Math.floor(this._settings.background.image.width * dimensionMultiplier),
                     height: this._canvas.height
                 };
@@ -683,11 +891,11 @@ var SuperParticles = function (canvas, options) {
                 var dimensionMultiplier = this._canvas.width / this._settings.background.image.width;
                 var halfBackground      = Math.floor((this._settings.background.image.height * dimensionMultiplier) / 2);
 
-                    that._.workspace = {
+                    this._settings.background._imagePosition = {
                     x:      centerY - halfBackground,
                     y:      0,
-                    width:  that._.canvasSize.width,
-                    height: Math.floor(that._.images.workingImg.height * dimensionMultiplier)
+                    width:  this._canvas.width,
+                    height: Math.floor(this._settings.background.image.height * dimensionMultiplier)
                 };
             }
         }
@@ -746,12 +954,17 @@ SuperParticles.version = {
     beta:  true,
 };
 
-SuperParticles.prototype.addParticle = function (particle) {
+SuperParticles.prototype.addParticle = function (particle, position) {
     if (!(particle instanceof SuperParticle))
         throw new Error("Particle have to be a SuperParticle instance.");
 
-    this._particles.push(particle);
+    if (typeof position === "number") {
+        this._particles.splice(position, 0, particle);
+    } else {
+        this._particles.push(particle);
+    }
 
+    this._particlesCount = this._particles.length;
     return this;
 };
 
@@ -759,6 +972,7 @@ SuperParticles.prototype.removeParticle = function (particle) {
     if (particle === true) {
         this._particles.pop();
 
+        this._particlesCount = this._particles.length;
         return this;
     }
     else if (particle instanceof SuperParticle) {
@@ -766,7 +980,8 @@ SuperParticles.prototype.removeParticle = function (particle) {
         if (index !== -1)
             this._particles.splice(index, 1);
 
-                return this;
+        this._particlesCount = this._particles.length;
+        return this;
     }
 
     throw new Error("Particle have to be a SuperParticle instance.");
@@ -846,10 +1061,296 @@ SuperParticles.prototype.getScreenshot = function (callback) {
 
 
 SuperParticles.prototype._loadOptions = function (options) {
-    if (typeof options === 'undefined')
+    if (typeof options !== 'object')
         return false;
 
+    var previousState = this._engineState();
+
+    if (typeof options.particles === "object") {
+        if ('count'             in options.particles && isFinite(options.particles.count)) {
+            if (options.particles.count >= 0)
+                this._settings.particles.count = options.particles.count;
+        }
+
+        if ('shapeType'         in options.particles && typeof options.particles.shapeType === "string") {
+            switch (options.particles.shapeType) {
+                case "circle":
+                    this._settings.particles.properties.shape.type = "circle";
+                    break;
+
+                case "square":
+                    this._settings.particles.properties.shape.type = "square";
+                    break;
+
+                case "none":
+                default:
+                    this._settings.particles.properties.shape.type = undefined;
+            }
+        }
+
+        if ('shapeSize'         in options.particles && isFinite(options.particles.shapeSize)) {
+            if (options.particles.shapeSize >= 0)
+                this._settings.particles.properties.shape.size = options.particles.shapeSize;
+        }
+
+        if ('shapeColor'        in options.particles && typeof options.particles.shapeColor === "string")
+            this._settings.particles.properties.shape.color = options.particles.shapeColor;
+
+        if ('strokeWidth'       in options.particles && isFinite(options.particles.strokeWidth)) {
+            if (options.particles.strokeWidth >= 0)
+                this._settings.particles.properties.shape.stroke.width = options.particles.strokeWidth;
+        }
+
+        if ('strokeColor'       in options.particles && typeof options.particles.strokeColor === "string")
+            this._settings.particles.properties.shape.stroke.color = options.particles.strokeColor;
+
+        if ('image'             in options.particles) {
+            if (options.particles.image instanceof HTMLImageElement) {
+                try {
+                    var image = Images.getCanvasForImage(options.particles.image);
+                    this._settings.particles.properties.image.data = image;
+                }
+                catch (e) {
+                    console.log("Particle image is unusable. Image won't be stored.");
+                }
+            }
+            else if (!options.particles.image) {
+                this._settings.particles.properties.image.data = undefined;
+            }
+        }
+
+        if ('imageSize'         in options.particles && isFinite(options.particles.imageSize)) {
+            if (options.particles.imageSize >= 0)
+                this._settings.particles.properties.image.size = options.particles.imageSize;
+        }
+
+        if ('imageOpacity'      in options.particles && isFinite(options.particles.imageOpacity)) {
+            if (options.particles.imageOpacity >= 0 && options.particles.imageOpacity <= 1)
+                this._settings.particles.properties.image.opacity = options.particles.imageOpacity;
+        }
+
+        if ('speed'             in options.particles && isFinite(options.particles.speed)) {
+            if (options.particles.speed >= 0) {
+                this._settings.particles.properties.motion.speed = options.particles.speed;
+
+                if (this._settings.particles.properties.motion.min_speed >= this._settings.particles.properties.motion.speed)
+                    this._settings.particles.properties.motion.min_speed = undefined;
+            }
+        }
+
+        if ('min_speed'         in options.particles && isFinite(options.particles.min_speed)) {
+            if (options.particles.min_speed >= 0 && options.particles.min_speed < this._settings.particles.properties.motion.speed)
+                this._settings.particles.properties.motion.min_speed = options.particles.min_speed;
+        }
+
+        if ('bouncing'          in options.particles && typeof options.particles.bouncing === "boolean")
+            this._settings.particles.properties.motion.bouncing = options.particles.bouncing;
+
+        if ('collisionSlowdown' in options.particles && typeof options.particles.collisionSlowdown === "boolean")
+            this._settings.particles.properties.motion.slowDownOnCollision = options.particles.collisionSlowdown;
+
+        if ('direction'         in options.particles) {
+            if (typeof options.particles.direction === "string") {
+                switch (options.particles.direction) {
+                    case "top":
+                    case "bottom":
+                    case "left":
+                    case "right":
+                    case "topleft":
+                    case "topright":
+                    case "bottomleft":
+                    case "bottomright":
+                        this._settings.particles.properties.motion.direction = options.particles.direction;
+                        break;
+
+                    case "none":
+                        this._settings.particles.properties.motion.direction = undefined;
+                        break;
+                }
+            }
+            else if (typeof options.particles.direction === "undefined") {
+                this._settings.particles.properties.motion.direction = undefined;
+            }
+        }
+
+        if ('vx'                in options.particles && isFinite(options.particles.vx)) {
+            if (options.particles.vx >= -1 && options.particles.vx <= 1) {
+                this._settings.particles.properties.motion.vx = options.particles.vx;
+
+                if (this._settings.particles.properties.motion.vx_min >= options.particles.vx)
+                    this._settings.particles.properties.motion.vx_min = undefined;
+            }
+        }
+
+        if ('vy'                in options.particles && isFinite(options.particles.vy)) {
+            if (options.particles.vy >= -1 && options.particles.vy <= 1) {
+                this._settings.particles.properties.motion.vy = options.particles.vy;
+
+                if (this._settings.particles.properties.motion.vy_min >= options.particles.vy)
+                    this._settings.particles.properties.motion.vy_min = undefined;
+            }
+        }
+
+        if ('vx_min'            in options.particles && isFinite(options.particles.vx_min)) {
+            if (options.particles.vx_min >= -1 && options.particles.vx_min < this._settings.particles.properties.motion.vx)
+                this._settings.particles.properties.motion.vx_min = options.particles.vx_min;
+        }
+
+        if ('vy_min'            in options.particles && isFinite(options.particles.vy_min)) {
+            if (options.particles.vy_min >= -1 && options.particles.vy_min < this._settings.particles.properties.motion.vx)
+                this._settings.particles.properties.motion.vy_min = options.particles.vy_min;
+        }
+
+        if ('opacity'           in options.particles && isFinite(options.particles.opacity)) {
+            if (options.particles.opacity > 0 && options.particles.opacity <= 1)
+                this._settings.particles.properties.opacity.value = options.particles.opacity;
+        }
+    }
+
+    if (typeof options.linking === "object") {
+        if ('enabled'       in options.linking && typeof options.linking.enabled === "boolean")
+            this._settings.linking.enabled = options.linking.enabled;
+
+        if ('max_distance'  in options.linking && isFinite(options.linking.max_distance)) {
+            if (options.linking.max_distance > 0)
+                this._settings.linking.max_distance = options.linking.max_distance;
+        }
+
+        if ('color'         in options.linking && typeof options.linking.color === "string")
+            this._settings.linking.color = options.linking.color;
+
+        if ('width'         in options.linking && isFinite(options.linking.width)) {
+            if (options.linking.width > 0)
+                this._settings.linking.width = options.linking.width;
+        }
+
+        if ('opacity'       in options.linking && isFinite(options.linking.opacity)) {
+            if (options.linking.opacity > 0 && options.linking.opacity <= 1)
+                this._settings.linking.opacity = options.linking.opacity;
+        }
+    }
+
+    if (typeof options.attraction === "object") {
+        if ('enabled'   in options.attraction && typeof options.attraction.enabled === "boolean")
+            this._settings.attraction.enabled = options.attraction.enabled;
+
+        if ('force'     in options.attraction && isFinite(options.attraction.force))
+            this._settings.attraction.force = options.attraction.force;
+    }
+
+    if ('smoothImages'  in options && typeof options.smoothImages === "boolean")
+        this._settings.particles.smoothImages = options.smoothImages;
+
+    if (typeof options.background === "object") {
+        if ('color'     in options.background) {
+            if (typeof options.background.color === "string")
+                this._settings.background.color = options.background.color;
+            else if (!options.background.color)
+                this._settings.background.color = undefined;
+        }
+
+        if ('image'     in options.background) {
+            if (options.background.image instanceof HTMLImageElement) {
+                try {
+                    var image = Images.getCanvasForImage(options.background.image);
+                    this._settings.background.image = image;
+                }
+                catch (e) {
+                    console.log("Background image is unusable. Image won't be stored.");
+                }
+            }
+            else if (!options.background.image) {
+                this._settings.background.image = undefined;
+            }
+        }
+    }
+
+    if ('limit30FPS'    in options && typeof options.limit30FPS === "boolean")
+        this._canvas.drawing.limitTo30FPS = options.limit30FPS;
+
+    this._updateParticles(previousState, this._engineState());
     return true;
+};
+
+SuperParticles.prototype._updateParticles = function (prevState, currentState) {
+    var countDiff = currentState.particles.count - prevState.particles.count;
+    var engineParticles = this._getEngineGeneratedParticles();
+
+    if (countDiff > 0) {
+        while (countDiff--) {
+            this.addParticle(this._generateParticle());
+        }
+    }
+    else if (countDiff < 0) {
+        countDiff = Math.abs(countDiff);    
+        var particlesToRemove = engineParticles.splice(engineParticles.length - countDiff, countDiff);
+
+        for (var i = 0; i < particlesToRemove.length; i++) {
+            this.removeParticle(particlesToRemove[i]);
+        }
+    }
+
+};
+
+SuperParticles.prototype._getEngineGeneratedParticles = function () {
+    var result = [];
+    var count = this._particles.length;
+
+    for (var i = 0; i < count; i++) {
+        if (typeof this._particles[i].tag === "undefined")
+            result.push(this._particles[i]);
+    }
+
+    return result;
+};
+
+SuperParticles.prototype._generateParticle = function () {
+};
+
+SuperParticles.prototype._engineState = function () {
+    var particlesImage, backgroundImage;
+
+    if (this._settings.particles.properties.image.data)
+        particlesImage = this._settings.particles.properties.image.data.toDataURL();
+
+            if (this._settings.background.image)
+        backgroundImage = this._settings.background.image.toDataURL();
+
+    return JSON.parse(JSON.stringify({
+        particles: {
+            count: this._settings.particles.count,
+            shape: this._settings.particles.properties.shape,
+            image: {
+                data: particlesImage,
+                size: this._settings.particles.properties.image.size,
+                opacity: this._settings.particles.properties.image.opacity,
+            },
+            motion: this._settings.particles.properties.motion,
+            opacity: this._settings.particles.properties.opacity,
+            smoothImages: this._settings.particles.smoothImages,
+        },
+        linking: this._settings.linking,
+        attraction: this._settings.attraction,
+        background: {
+            color: this._settings.background.color,
+            image: backgroundImage,
+        },
+
+        drawing: {
+            stop: this._canvas.drawing.stop,
+            limitTo30FPS: this._canvas.drawing.limitTo30FPS,
+        },
+
+        frame: this._diagData.frame,
+    }));
+};
+
+SuperParticles.prototype._particlesState = function () {
+    var particlesState = [];
+
+    for (var i = 0; i < this._particles.length; i++) {
+        particlesState.push(this._particles[i].getState());
+    }
 };
 
 SuperParticles.prototype._handleEvent = function (eventName, argArray, disableInner, disablePublic) {
@@ -976,10 +1477,10 @@ SuperParticles.prototype._drawing_ClearCanvas = function () {
     if (this._settings.background.image) {
         this._canvas.ctx.drawImage(
             this._settings.background.image,
-            this._settings.background.imagePosition.x,
-            this._settings.background.imagePosition.y,
-            this._settings.background.imagePosition.width,
-            this._settings.background.imagePosition.height);
+            this._settings.background._imagePosition.x,
+            this._settings.background._imagePosition.y,
+            this._settings.background._imagePosition.width,
+            this._settings.background._imagePosition.height);
     }
 
     this._canvas.ctx.restore();

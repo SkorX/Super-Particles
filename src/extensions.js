@@ -9,7 +9,7 @@
 // === Images ===
 var Images = {
     /**
-     * Converts image of any type (canvas, image, video) into canvas. If image is cavas, it will be copied.
+     * Converts image of any type (canvas, image, video) into canvas. If image is canvas, it will be copied.
      * 
      * @param {(HTMLCanvasElement|HTMLImageElement|HTMLVideoElement)} image - Image to convert.
      * @returns {HTMLCanvasElement} Canvas created for provided image.
@@ -66,8 +66,7 @@ var Images = {
     convertImage: function (image, targetType, callback) {
         if (!(image instanceof HTMLCanvasElement) &&
             !(image instanceof HTMLImageElement)  &&
-            !(image instanceof HTMLVideoElement)  &&
-            imgFromStr === false)
+            !(image instanceof HTMLVideoElement))
             throw new Error("Can't convert image, because it is in wrong format.");
 
         if (targetType !== HTMLCanvasElement &&
@@ -96,17 +95,17 @@ var Images = {
     },
 
     /**
-     * Scales canvas image to target maximal size.
+     * Scales down canvas image to target maximal size.
      * 
      * @param {HTMLCanvasElement} imageCanvas - Canvas to resize.
-     * @param {numbar} maxWidth - Target max width of new image
-     * @param {numbar} maxHeight - Target max height of new image
+     * @param {number} maxWidth - Target max width of new image.
+     * @param {number} maxHeight - Target max height of new image.
      */
     getScaledDownImage: function (imageCanvas, maxWidth, maxHeight) {
         if (typeof imageCanvas === "undefined" || !(imageCanvas instanceof HTMLCanvasElement))
             return false;
 
-        //canvas cloneing
+        //canvas cloning
         var resultCanvas = Images.getCanvasForImage(imageCanvas);
 
         if (imageCanvas.width > maxWidth || imageCanvas.height > maxHeight) {
@@ -126,8 +125,43 @@ var Images = {
 
             resultCanvas.width  = newWidth;
             resultCanvas.height = newHeight;
-            resultCanvas.getContext('2d').drawImage(imageCanvas, 0, 0, newWidth, newHeight);
+            resultCanvas
+                .getContext('2d')
+                .drawImage(imageCanvas, 0, 0, newWidth, newHeight);
         }
+
+        return resultCanvas;
+    },
+
+    /**
+     * Scales up or down image to target size or width (height will be calculated by aspect ratio).
+     * 
+     * @param {HTMLCanvasElement} imageCanvas - Canvas to resize.
+     * @param {number} width - Target width of rescaled image.
+     * @param {number} [height] - Target height of rescaled image (or undefined to keep aspect ratio).
+     */
+    getScaledImage: function (imageCanvas, width, height) {
+        if (typeof imageCanvas === "undefined" || !(imageCanvas instanceof HTMLCanvasElement))
+            return false;
+
+        if (!isFinite(width))
+            //can't produce scales image (no size), so we clone old image (same size)
+            return Images.getCanvasForImage(imageCanvas);
+
+        var resultCanvas    = document.createElement("canvas");
+        
+        resultCanvas.width = width;
+        if (!isFinite(height)) {
+            var ratio = imageCanvas.height / imageCanvas.width;
+            resultCanvas.height = width * ratio;
+        }       
+        else {
+            resultCanvas.height = height;
+        }
+
+        resultCanvas
+            .getContext('2d')
+            .drawImage(imageCanvas, 0, 0, resultCanvas.width, resultCanvas.height);
 
         return resultCanvas;
     }
@@ -145,10 +179,43 @@ TaintedImageError.prototype.toString = function () {
 }
 
 // === Math ===
+/**
+ * Returns random number in [min; max) range.
+ * 
+ * @param {number} min - Minimal value.
+ * @param {number} max - Maximal value.
+ */
+Math.rand = function (min, max) {
+    return (Math.random() * (max - min)) + min;
+};
+
+/**
+ * Returns random integer number in [min; max] range.
+ * 
+ * @param {number} min - Minimal value.
+ * @param {number} max - Maximal value.
+ */
+Math.randInt = function (min, max) {
+    min = Math.ceil(min);
+    max = Math.floor(max);
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+/**
+ * Returns the square of the number.
+ * 
+ * @param {number} x - Value whose square is computed.
+ */
 Math.sqr = function (x) {
     //Multiplying is much faster then Math.pow function
     return x * x;
 };
-Math.sqr3 = function (x) {
+
+/**
+ * Returns the cubic of the number.
+ * 
+ * @param {number} x - Value whose cubic is computed.
+ */
+Math.cub = function (x) {
     return x * x * x;
 };

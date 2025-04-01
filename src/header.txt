@@ -6,7 +6,8 @@
 /* v0.2.0
 /* ----------------------------------------------- */
 
-// --- FULL OPTIONS EXPLANATION (with default values) (do not uncomment this code, preview only) ---
+// --- OPTIONS EXPLANATION (with default values) (do not uncomment this code, preview only) ---
+// SuperParticles options:
 // {
 //     particles: {
 //         count:                       0,              (number)
@@ -56,6 +57,36 @@
 //         enabled:                     true            (boolean)
 //         rotateX:                     500,            (numbar)
 //         rotateY:                     500,            (numbar)
+//     }
+// }
+
+// Single particle options:
+// {
+//     x:                      undefined,          (number)
+//     y:                      undefined,          (number)
+//
+//     vx:                     undefined,          (number)
+//     vy:                     undefined,          (number)
+//
+//     gravityForce:           0,                  (number)
+//
+//     apperance: {
+//         shapeType:          undefined,          (string, ("none" | "circle" | "square"))
+//         shapeSize:          0,                  (number, (0 <= val))
+//         shapeColor:         undefined           (string, [#colorString])
+//
+//         strokeWidth:        0,                  (number, (0 <= val))
+//         strokeColor:        undefined,          (string, [#colorString])
+//
+//         image:              undefined,          (undefined | HTMLImageElement)
+//         imageSize:          0,                  (number, (0 <= val))
+//         imageOpacity:       1,                  (number, (0 <= val <= 1))
+//
+//         opacity:            1,                  (number, (0 < val <= 1))
+//     }
+//     behavior: {
+//         bounce:             true,               (boolean)
+//         collisionSlowdown:  false,              (boolean)
 //     }
 // }
 

@@ -23,7 +23,7 @@ function prepareParticle(c) {
     p._movement.vx   = (Math.random() * (demoOptions.maxVelocity * 2)) - demoOptions.maxVelocity;
     p._movement.vy   = (Math.random() * (demoOptions.maxVelocity * 2)) - demoOptions.maxVelocity;
 
-    p._apperance.behavior.slowDownOnCollision = demoOptions.collisionSlowdown;
+    p._behavior.slowDownOnCollision = demoOptions.collisionSlowdown;
     p._movement.initialSpeedSqr = Math.sqr(p._movement.vx) + Math.sqr(p._movement.vy);
 
     p._apperance.shape.size = (Math.random() * (demoOptions.maxSize - 10)) + 10;

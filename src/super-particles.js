@@ -6,57 +6,55 @@
 /* v0.2.0
 /* ----------------------------------------------- */
 
-// --- FULL OPTIONS EXPLANATION (with default values) (do not uncomment this code, preview only) ---
+// --- OPTIONS EXPLANATION (with default values) (do not uncomment this code, preview only) ---
 // {
 //     particles: {
-//         count:                       0,              (number)
-//         properties: {
-//             shape: {
-//                 type:                "none",         (string, ("none" || "circle" || "square"))
-//                 size:                25,             (number)
-//                 color:               "#FFFFFF",      (string, [#colorString])
-//                 stroke: {
-//                     width:           0,              (number)
-//                     color:           "#000000",      (string, [#colorString])
-//                 }
-//             }
-//             image: {
-//                 data:                undefined,      (undefined || HTMLImageElement)
-//                 size:                15,             (number)
-//                 opacity:             1,              (number, (0 < val <= 1))
-//             }
-//             motion: {
-//                 speed:               8,              (number, (0 <= val))
-//                 min_speed:           undefined,      (number, val < speed)
-//                 bouncing:            true,           (boolean)
-//                 slowDownOnCollision: false,          (boolean)
-//                 vx:                  undefined,      (undefined || number, number: (0 < val <= 1))
-//                 vy:                  undefined,      (undefined || number, number: (0 < val <= 1))
-//                 vx_min:              undefined,      (undefined || number, number: (0 < val <= 1))
-//                 vy_min:              undefined,      (undefined || number, number: (0 < val <= 1))
-//             }
-//             opacity: {
-//                 value:               1,              (number, (0 < val <= 1))
-//                 alternation: {
-//                     enabled:         true,           (boolean)
-//                     speed:           1,              (number)
-//                     min_value:       0,              (number)
-//                 }
-//             }
-//         }
+//         count:                   0,              (number, (0 <= val))
+//
+//         shapeType:               "none",         (string, ("none" | "circle" | "square"))
+//         shapeSize:               25,             (number, (0 <= val))
+//         shapeColor:              "#FFFFFF",      (string, [#colorString])
+//
+//         strokeWidth:             0,              (number, (0 <= val))
+//         strokeColor:             "#000000",      (string, [#colorString])
+//
+//         image:                   undefined,      (undefined | HTMLImageElement)
+//         imageSize:               15,             (number, (0 <= val))
+//         imageOpacity:            1,              (number, (0 <= val <= 1))
+//
+//         speed:                   8,              (number, (0 <= val))
+//         min_speed:               undefined,      (undefined | number, number: (0 < val < speed)
+//         bouncing:                true,           (boolean)
+//         collisionSlowdown:       false,          (boolean)
+//          
+//         direction:               undefined,      (undefined | string, string: ("top" | "bottom" | "left" | "right" | "topleft" ...))
+//         vx:                      undefined,      (undefined | number, number: (-1 <= val <= 1))
+//         vy:                      undefined,      (undefined | number, number: (-1 <= val <= 1))
+//         vx_min:                  undefined,      (undefined | number, number: (-1 <= val < vx))
+//         vy_min:                  undefined,      (undefined | number, number: (-1 <= val < vy))
+//
+//         opacity:                 1,              (number, (0 < val <= 1))
 //     }
 //     linking: {
-//         enabled:                     true,           (boolean)
-//         max_distance:                150,            (numbar)
-//         color:                       "#FFFFFF",      (string, [#colorString])
-//         width:                       1.5,            (number)
-//         opacity:                     0.6,            (number, (0 < val <= 1))
+//         enabled:                 true,           (boolean)
+//         max_distance:            150,            (number, (0 < val))
+//         color:                   "#FFFFFF",      (string, [#colorString])
+//         width:                   1.5,            (number, (0 < val))
+//         opacity:                 0.6,            (number, (0 < val <= 1))
 //     }
 //     attraction: {
-//         enabled:                     true            (boolean)
-//         rotateX:                     500,            (numbar)
-//         rotateY:                     500,            (numbar)
+//         enabled:                 true            (boolean)
+//         force:                   500,            (number)
 //     }
+//
+//     smoothImages:                false,          (boolean)
+//
+//     background: {
+//         color:                   undefined,      (undefined | string, string: [#colorString])
+//         image:                   undefined,      (undefined | HTMLImageElement)
+//     }
+//
+//     limit30FPS:                  false,          (boolean)
 // }
 
 var SuperParticles = function (canvas, options) {
@@ -84,8 +82,8 @@ var SuperParticles = function (canvas, options) {
                 shape: {
                     type: "none",               //none | circle | square
                     size: 25,                   //pixels
-
                     color: "#FFFFFF",
+
                     stroke: {
                         width: 0,
                         color: "#000000",
@@ -104,10 +102,11 @@ var SuperParticles = function (canvas, options) {
                     bouncing:            true,  //determines if particles will be able to bounce on canvas borders
                     slowDownOnCollision: false, //forces particles to keep it's speed (and only change direction)
 
-                    vx:     undefined,          //initial X velocity in range <-1;1> (undefined = random)
-                    vy:     undefined,          //initial Y velocity in range <-1;1> (undefined = random)
-                    vx_min: undefined,          //minimal X velocity in range <-1;1> (work only when vx is not undefined)
-                    vy_min: undefined,          //minimal Y velocity in range <-1;1> (work only when vy is not undefined)
+                    direction: undefined,       //undefined (no direction) or "top" | "bottom" | "left" | "right" | "topleft" | "topright" | "bottomleft" | "bottomright"
+                    vx:        undefined,       //initial X velocity in range <-1;1> (undefined = random)
+                    vy:        undefined,       //initial Y velocity in range <-1;1> (undefined = random)
+                    vx_min:    undefined,       //minimal X velocity in range <-1;1> (work only when vx is not undefined)
+                    vy_min:    undefined,       //minimal Y velocity in range <-1;1> (work only when vy is not undefined)
                 },
 
                 opacity: {
@@ -140,7 +139,7 @@ var SuperParticles = function (canvas, options) {
             color: undefined,
             image: undefined,                   //HTMLImageElement
 
-            imagePosition: {
+            _imagePosition: {
                 x: 0,
                 y: 0,
                 width: 0,
@@ -242,7 +241,7 @@ var SuperParticles = function (canvas, options) {
             var imageRatio  = this._settings.background.image.naturalWidth / this._settings.background.image.naturalHeight;
 
             if (canvasRatio === imageRatio) {               //image same as canvas (fill whole canvas)
-                this._settings.background.imagePosition = {
+                this._settings.background._imagePosition = {
                     x:      0,
                     y:      0,
                     width:  this._canvas.width,
@@ -254,9 +253,9 @@ var SuperParticles = function (canvas, options) {
                 var dimensionMultiplier = this._canvas.height / this._settings.background.image.naturalHeight;
                 var halfBackground      = Math.floor((this._settings.background.image.width * dimensionMultiplier) / 2);
                 
-                that._.workspace = {
+                this._settings.background._imagePosition = {
                     x:      0,
-                    leyft:  centerX - halfBackground,
+                    y:  centerX - halfBackground,
                     width:  Math.floor(this._settings.background.image.width * dimensionMultiplier),
                     height: this._canvas.height
                 };
@@ -266,11 +265,11 @@ var SuperParticles = function (canvas, options) {
                 var dimensionMultiplier = this._canvas.width / this._settings.background.image.width;
                 var halfBackground      = Math.floor((this._settings.background.image.height * dimensionMultiplier) / 2);
     
-                that._.workspace = {
+                this._settings.background._imagePosition = {
                     x:      centerY - halfBackground,
                     y:      0,
-                    width:  that._.canvasSize.width,
-                    height: Math.floor(that._.images.workingImg.height * dimensionMultiplier)
+                    width:  this._canvas.width,
+                    height: Math.floor(this._settings.background.image.height * dimensionMultiplier)
                 };
             }
         }
@@ -344,13 +343,20 @@ SuperParticles.version = {
 
 //// === PUBLIC METHODS ===
 //particles
-SuperParticles.prototype.addParticle = function (particle) {
+SuperParticles.prototype.addParticle = function (particle, position) {
     if (!(particle instanceof SuperParticle))
         throw new Error("Particle have to be a SuperParticle instance.");
 
-    //adding particle to collection
-    this._particles.push(particle);
+    if (typeof position === "number") {
+        //adding particle at specific position in collection
+        this._particles.splice(position, 0, particle);
+    } else {
+        //adding particle at the end of collection
+        this._particles.push(particle);
+    }
 
+    //updating particles count
+    this._particlesCount = this._particles.length;
     return this;
 };
 
@@ -359,6 +365,8 @@ SuperParticles.prototype.removeParticle = function (particle) {
         //removing last particle
         this._particles.pop();
 
+        //updating particles count
+        this._particlesCount = this._particles.length;
         return this;
     }
     else if (particle instanceof SuperParticle) {
@@ -367,6 +375,8 @@ SuperParticles.prototype.removeParticle = function (particle) {
         if (index !== -1)
             this._particles.splice(index, 1);
         
+        //updating particles count
+        this._particlesCount = this._particles.length;
         return this;
     }
 
@@ -452,123 +462,316 @@ SuperParticles.prototype.getScreenshot = function (callback) {                  
 //// === PRIVATE METHODS ===
 //options
 SuperParticles.prototype._loadOptions = function (options) {
-    if (typeof options === 'undefined')
+    if (typeof options !== 'object')
         return false;
 
-    // if ('maskVisible'          in options && typeof options.maskVisible === 'boolean')
-    //     that.maskVisibiliy(options.maskVisible);
+    var previousState = this._engineState();
 
-    // if ('maskType'             in options && typeof options.maskType === 'string')
-    //     if (options.maskType === 'rectangle' || options.maskType === 'image' || options.maskType === 'rectangle-inner')
-    //         that._.mask.type = options.maskType;
+    //particles
+    if (typeof options.particles === "object") {
+        //count
+        if ('count'             in options.particles && isFinite(options.particles.count)) {
+            if (options.particles.count >= 0)
+                this._settings.particles.count = options.particles.count;
+        }
 
-    // if ('maskAspectRatio'      in options) {
-    //     if (typeof options.maskAspectRatio === 'number' && options.maskAspectRatio > 0)
-    //         that._.mask.aspectRatio = options.maskAspectRatio;
-    //     else if (typeof options.maskAspectRatio === 'boolean' && options.maskAspectRatio === false)
-    //         that._.mask.aspectRatio = options.maskAspectRatio;
-    // }
+        //shape & stroke
+        if ('shapeType'         in options.particles && typeof options.particles.shapeType === "string") {
+            switch (options.particles.shapeType) {
+                case "circle":
+                    this._settings.particles.properties.shape.type = "circle";
+                    break;
 
-    // if ('maskOpacity'          in options && typeof options.maskOpacity === 'number')
-    //     if (options.maskOpacity >= 0.1 && options.maskOpacity <= 1)
-    //         that._.mask.opacity = options.maskOpacity;
+                case "square":
+                    this._settings.particles.properties.shape.type = "square";
+                    break;
 
-    // if ('maskColor'            in options && typeof options.maskColor === 'string')
-    //     if (window.colorHelper.getColorFromHex(options.maskColor) !== false) {
-    //         that._.mask.color = options.maskColor;
-    //         that._.mask.drawImage = that._maskRecolor(that._.mask.image);
-    //     }
+                case "none":
+                default:
+                    this._settings.particles.properties.shape.type = undefined;
+            }
+        }
 
-    // if ('maskImage'            in options && options.maskImage instanceof HTMLImageElement)
-    //     that.applyImageMask(maskImage);
+        if ('shapeSize'         in options.particles && isFinite(options.particles.shapeSize)) {
+            if (options.particles.shapeSize >= 0)
+                this._settings.particles.properties.shape.size = options.particles.shapeSize;
+        }
 
-    // if ('maskGrabMargin'       in options && typeof options.maskGrabMargin === 'number')
-    //     if (options.maskGrabMargin >= 4 && options.maskGrabMargin <= 50)
-    //         that._.mask.grabMargin = options.maskGrabMargin;
+        if ('shapeColor'        in options.particles && typeof options.particles.shapeColor === "string")
+            this._settings.particles.properties.shape.color = options.particles.shapeColor;
 
-    // if ('maskTouchGrabMargin' in options && typeof options.maskTouchGrabMargin === 'number')
-    //     if (options.maskTouchGrabMargin >= 10 && options.maskTouchGrabMargin <= 100)
-    //         that._.mask.touchGrabMargin = options.maskTouchGrabMargin;
+        if ('strokeWidth'       in options.particles && isFinite(options.particles.strokeWidth)) {
+            if (options.particles.strokeWidth >= 0)
+                this._settings.particles.properties.shape.stroke.width = options.particles.strokeWidth;
+        }
 
-    
-    // if ('maskQualityData'      in options) {
-    //     try {
-    //         if (typeof options.maskQualityData === 'undefined') {
-    //             that._.mask.qualityValues = undefined;
-    //             that._fieldQualityHandler(true);
-    //         }
-    //         else
-    //             that.setFieldQuality(options.maskQualityData);
-    //     } catch (e) { }
-    // }
+        if ('strokeColor'       in options.particles && typeof options.particles.strokeColor === "string")
+            this._settings.particles.properties.shape.stroke.color = options.particles.strokeColor;
 
-    // //theme options
-    // if ('theme'                in options && typeof options.theme === 'string') {
-    //     switch (options.theme) {        //we can't use build-in function (because it requests redraw, it may break script called from constructor (image is not loaded, but try to redraw))
-    //         case "dark": {
-    //             that._.theme.color = "#000000";
-    //             break;
-    //         }
-    //         case "light": {
-    //             that._.theme.color = "#FFFFFF";
-    //             break;
-    //         }
-    //         default: {
-    //             var colorCheck = new RegExp("^#([0-9A-F]{3}|[0-9A-F]{6})$", "i");
-    //             if (!colorCheck.test(options.theme))
-    //                 break;
+        //image
+        if ('image'             in options.particles) {
+            if (options.particles.image instanceof HTMLImageElement) {
+                try {
+                    var image = Images.getCanvasForImage(options.particles.image);
+                    this._settings.particles.properties.image.data = image;
+                }
+                catch (e) {
+                    //broken image :|
+                    console.log("Particle image is unusable. Image won't be stored.");
+                }
+            }
+            else if (!options.particles.image) {
+                this._settings.particles.properties.image.data = undefined;
+            }
+        }
 
-    //             that._.theme.color = options.theme;
-    //         }
-    //     }
-    // }
+        if ('imageSize'         in options.particles && isFinite(options.particles.imageSize)) {
+            if (options.particles.imageSize >= 0)
+                this._settings.particles.properties.image.size = options.particles.imageSize;
+        }
 
-    // if ('cornersType'          in options && typeof options.cornersType === 'string')
-    //     if (options.cornersType === 'none' || options.cornersType === 'bubbles' || options.cornersType === 'edges')
-    //         that._.theme.cornersType = options.cornersType;
+        if ('imageOpacity'      in options.particles && isFinite(options.particles.imageOpacity)) {
+            if (options.particles.imageOpacity >= 0 && options.particles.imageOpacity <= 1)
+                this._settings.particles.properties.image.opacity = options.particles.imageOpacity;
+        }
 
-    // if ('cornersColor'         in options && typeof options.cornersColor === 'string')
-    //     if (window.colorHelper.getColorFromHex(options.cornersColor) !== false)
-    //         that._.theme.cornersColor = options.cornersColor;
+        //motion
+        if ('speed'             in options.particles && isFinite(options.particles.speed)) {
+            if (options.particles.speed >= 0) {
+                this._settings.particles.properties.motion.speed = options.particles.speed;
 
-    // if ('cornersRadius'        in options && typeof options.cornersRadius === 'number')
-    //     if (options.cornersRadius > 0 && options.cornersRadius <= 50)
-    //         that._.theme.cornersRadius = options.cornersRadius;
+                if (this._settings.particles.properties.motion.min_speed >= this._settings.particles.properties.motion.speed)
+                    this._settings.particles.properties.motion.min_speed = undefined;
+            }
+        }
 
-    // //animation options
-    // if ('waitAnimTimespan'     in options && typeof options.waitAnimTimespan === 'number')
-    //     if (options.waitAnimTimespan > 100)
-    //         that._.waitAnimation.phaseTimespan = options.waitAnimTimespan;
+        if ('min_speed'         in options.particles && isFinite(options.particles.min_speed)) {
+            if (options.particles.min_speed >= 0 && options.particles.min_speed < this._settings.particles.properties.motion.speed)
+                this._settings.particles.properties.motion.min_speed = options.particles.min_speed;
+        }
 
-    // if ('waitAnimSize'         in options && typeof options.waitAnimSize === 'number')
-    //     if (options.waitAnimSize > 0.01 && options.waitAnimSize <= 1)
-    //         that._.waitAnimation.size = options.waitAnimSize;
-    //     else if (options.waitAnimSize > 1)
-    //         that._.waitAnimation.size = 5;              //if (size > 1) we make animation on full canvas
+        if ('bouncing'          in options.particles && typeof options.particles.bouncing === "boolean")
+            this._settings.particles.properties.motion.bouncing = options.particles.bouncing;
 
-    // if ('waitAnimColor'        in options) {
-    //     if (typeof options.waitAnimColor === 'undefined')
-    //         that._.waitAnimation.color = undefined;
-    //     else if (typeof options.waitAnimColor === 'boolean' && options.waitAnimColor === false)
-    //         that._.waitAnimation.color = undefined;
-    //     else if (typeof options.waitAnimColor === 'string'  && window.colorHelper.getColorFromHex(options.waitAnimColor) !== false)
-    //         that._.waitAnimation.color = options.waitAnimColor;
-    // }
+        if ('collisionSlowdown' in options.particles && typeof options.particles.collisionSlowdown === "boolean")
+            this._settings.particles.properties.motion.slowDownOnCollision = options.particles.collisionSlowdown;
 
-    // //first we set fullscreen target and than check if we should turn that on
-    // if ('fullscreenTarget'     in options) {
-    //     if (typeof options.fullscreenTarget === 'undefined')
-    //         that._.fullscreen.target = document.documentElement;
-    //     else if (that._fullscreenAvailable(options.fullscreenTarget))
-    //         that._.fullscreen.target = options.fullscreenTarget;
-    // }
+        if ('direction'         in options.particles) {
+            if (typeof options.particles.direction === "string") {
+                switch (options.particles.direction) {
+                    case "top":
+                    case "bottom":
+                    case "left":
+                    case "right":
+                    case "topleft":
+                    case "topright":
+                    case "bottomleft":
+                    case "bottomright":
+                        this._settings.particles.properties.motion.direction = options.particles.direction;
+                        break;
 
-    // if ('fullscreenEnabled'    in options && typeof options.fullscreenEnabled === 'boolean') {
-    //     if (options.fullscreenEnabled !== that._.fullscreen.enabled)
-    //         that.toggleFullscreen();
-    // }
+                    case "none":
+                        this._settings.particles.properties.motion.direction = undefined;
+                        break;
+                }
+            }
+            else if (typeof options.particles.direction === "undefined") {
+                this._settings.particles.properties.motion.direction = undefined;
+            }
+        }
 
+        if ('vx'                in options.particles && isFinite(options.particles.vx)) {
+            if (options.particles.vx >= -1 && options.particles.vx <= 1) {
+                this._settings.particles.properties.motion.vx = options.particles.vx;
+
+                if (this._settings.particles.properties.motion.vx_min >= options.particles.vx)
+                    this._settings.particles.properties.motion.vx_min = undefined;
+            }
+        }
+
+        if ('vy'                in options.particles && isFinite(options.particles.vy)) {
+            if (options.particles.vy >= -1 && options.particles.vy <= 1) {
+                this._settings.particles.properties.motion.vy = options.particles.vy;
+
+                if (this._settings.particles.properties.motion.vy_min >= options.particles.vy)
+                    this._settings.particles.properties.motion.vy_min = undefined;
+            }
+        }
+
+        if ('vx_min'            in options.particles && isFinite(options.particles.vx_min)) {
+            if (options.particles.vx_min >= -1 && options.particles.vx_min < this._settings.particles.properties.motion.vx)
+                this._settings.particles.properties.motion.vx_min = options.particles.vx_min;
+        }
+
+        if ('vy_min'            in options.particles && isFinite(options.particles.vy_min)) {
+            if (options.particles.vy_min >= -1 && options.particles.vy_min < this._settings.particles.properties.motion.vx)
+                this._settings.particles.properties.motion.vy_min = options.particles.vy_min;
+        }
+
+        if ('opacity'           in options.particles && isFinite(options.particles.opacity)) {
+            if (options.particles.opacity > 0 && options.particles.opacity <= 1)
+                this._settings.particles.properties.opacity.value = options.particles.opacity;
+        }
+    }
+
+    //linking
+    if (typeof options.linking === "object") {
+        if ('enabled'       in options.linking && typeof options.linking.enabled === "boolean")
+            this._settings.linking.enabled = options.linking.enabled;
+
+        if ('max_distance'  in options.linking && isFinite(options.linking.max_distance)) {
+            if (options.linking.max_distance > 0)
+                this._settings.linking.max_distance = options.linking.max_distance;
+        }
+
+        if ('color'         in options.linking && typeof options.linking.color === "string")
+            this._settings.linking.color = options.linking.color;
+
+        if ('width'         in options.linking && isFinite(options.linking.width)) {
+            if (options.linking.width > 0)
+                this._settings.linking.width = options.linking.width;
+        }
+
+        if ('opacity'       in options.linking && isFinite(options.linking.opacity)) {
+            if (options.linking.opacity > 0 && options.linking.opacity <= 1)
+                this._settings.linking.opacity = options.linking.opacity;
+        }
+    }
+
+    //attraction
+    if (typeof options.attraction === "object") {
+        if ('enabled'   in options.attraction && typeof options.attraction.enabled === "boolean")
+            this._settings.attraction.enabled = options.attraction.enabled;
+
+        if ('force'     in options.attraction && isFinite(options.attraction.force))
+            this._settings.attraction.force = options.attraction.force;
+    }
+
+    //smoothing
+    if ('smoothImages'  in options && typeof options.smoothImages === "boolean")
+        this._settings.particles.smoothImages = options.smoothImages;
+
+    //background
+    if (typeof options.background === "object") {
+        if ('color'     in options.background) {
+            if (typeof options.background.color === "string")
+                this._settings.background.color = options.background.color;
+            else if (!options.background.color)
+                this._settings.background.color = undefined;
+        }
+
+        if ('image'     in options.background) {
+            if (options.background.image instanceof HTMLImageElement) {
+                try {
+                    var image = Images.getCanvasForImage(options.background.image);
+                    this._settings.background.image = image;
+                }
+                catch (e) {
+                    //broken image :|
+                    console.log("Background image is unusable. Image won't be stored.");
+                }
+            }
+            else if (!options.background.image) {
+                this._settings.background.image = undefined;
+            }
+        }
+    }
+
+    //FPS limiting
+    if ('limit30FPS'    in options && typeof options.limit30FPS === "boolean")
+        this._canvas.drawing.limitTo30FPS = options.limit30FPS;
+
+    this._updateParticles(previousState, this._engineState());
     return true;
+};
+
+SuperParticles.prototype._updateParticles = function (prevState, currentState) {
+    var countDiff = currentState.particles.count - prevState.particles.count;
+    var engineParticles = this._getEngineGeneratedParticles();
+
+    if (countDiff > 0) {
+        //adding new particles
+        while (countDiff--) {
+            this.addParticle(this._generateParticle());
+        }
+    }
+    else if (countDiff < 0) {
+        //removing last engine particles (by diff)
+        countDiff = Math.abs(countDiff);    //we need positive value ;)
+        var particlesToRemove = engineParticles.splice(engineParticles.length - countDiff, countDiff);
+
+        for (var i = 0; i < particlesToRemove.length; i++) {
+            this.removeParticle(particlesToRemove[i]);
+        }
+    }
+
+    //TODO update current engineParticles
+};
+
+//particles list / genetation / etc.
+SuperParticles.prototype._getEngineGeneratedParticles = function () {
+    var result = [];
+    var count = this._particles.length;
+
+    for (var i = 0; i < count; i++) {
+        if (typeof this._particles[i].tag === "undefined")
+            result.push(this._particles[i]);
+    }
+
+    return result;
+};
+
+SuperParticles.prototype._generateParticle = function () {
+    //TODO 
+};
+
+//state
+SuperParticles.prototype._engineState = function () {
+    var particlesImage, backgroundImage;
+
+    //praparing data which may be undefined
+    if (this._settings.particles.properties.image.data)
+        particlesImage = this._settings.particles.properties.image.data.toDataURL();
+        
+    if (this._settings.background.image)
+        backgroundImage = this._settings.background.image.toDataURL();
+
+    //generating engine state
+    return JSON.parse(JSON.stringify({
+        particles: {
+            count: this._settings.particles.count,
+            shape: this._settings.particles.properties.shape,
+            image: {
+                data: particlesImage,
+                size: this._settings.particles.properties.image.size,
+                opacity: this._settings.particles.properties.image.opacity,
+            },
+            motion: this._settings.particles.properties.motion,
+            opacity: this._settings.particles.properties.opacity,
+            smoothImages: this._settings.particles.smoothImages,
+        },
+        linking: this._settings.linking,
+        attraction: this._settings.attraction,
+        background: {
+            color: this._settings.background.color,
+            image: backgroundImage,
+        },
+
+        drawing: {
+            stop: this._canvas.drawing.stop,
+            limitTo30FPS: this._canvas.drawing.limitTo30FPS,
+        },
+
+        frame: this._diagData.frame,
+    }));
+};
+
+SuperParticles.prototype._particlesState = function () {
+    var particlesState = [];
+
+    for (var i = 0; i < this._particles.length; i++) {
+        particlesState.push(this._particles[i].getState());
+    }
 };
 
 //callbacks & events
@@ -707,10 +910,10 @@ SuperParticles.prototype._drawing_ClearCanvas = function () {
     if (this._settings.background.image) {
         this._canvas.ctx.drawImage(
             this._settings.background.image,
-            this._settings.background.imagePosition.x,
-            this._settings.background.imagePosition.y,
-            this._settings.background.imagePosition.width,
-            this._settings.background.imagePosition.height);
+            this._settings.background._imagePosition.x,
+            this._settings.background._imagePosition.y,
+            this._settings.background._imagePosition.width,
+            this._settings.background._imagePosition.height);
     }
 
     this._canvas.ctx.restore();

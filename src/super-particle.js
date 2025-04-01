@@ -6,7 +6,37 @@
 /* v0.2.0
 /* ----------------------------------------------- */
 
-// --- FULL OPTIONS EXPLANATION (with default values) (do not uncomment this code, preview only) ---
+// --- OPTIONS EXPLANATION (with default values) (do not uncomment this code, preview only) ---
+// {
+//     x:                      undefined,          (number)
+//     y:                      undefined,          (number)
+//
+//     vx:                     undefined,          (number)
+//     vy:                     undefined,          (number)
+//
+//     gravityForce:           0,                  (number)
+//
+//     apperance: {
+//         shapeType:          undefined,          (string, ("none" | "circle" | "square"))
+//         shapeSize:          0,                  (number, (0 <= val))
+//         shapeColor:         undefined           (string, [#colorString])
+//
+//         strokeWidth:        0,                  (number, (0 <= val))
+//         strokeColor:        undefined,          (string, [#colorString])
+//
+//         image:              undefined,          (undefined | HTMLImageElement)
+//         imageSize:          0,                  (number, (0 <= val))
+//         imageOpacity:       1,                  (number, (0 <= val <= 1))
+//
+//         opacity:            1,                  (number, (0 < val <= 1))
+//     }
+//     behavior: {
+//         bounce:             true,               (boolean)
+//         collisionSlowdown:  false,              (boolean)
+//     }
+// }
+
+
 var SuperParticle = function (tag, options) {
     "use strict";
 
@@ -27,7 +57,7 @@ var SuperParticle = function (tag, options) {
         vx: undefined,
         vy: undefined,
 
-        initialSpeedSqr: undefined, //slowdown cached speed (for slowDownOnCollision setting)
+        initialSpeedSqr: undefined, //slowdown cached speed (for slowdownOnCollision setting)
     };
 
     this._gravity = {
@@ -48,7 +78,7 @@ var SuperParticle = function (tag, options) {
             sourceData: undefined,  //HTMLCanvasElement loaded when creating particle
             data:       undefined,  //HTMLCanvasElement optimized for drawing (TODO optimize to target size)
             size:       0,
-            opacity:    0,
+            opacity:    1,
         },
         opacity: {
             value: 1,
@@ -59,12 +89,12 @@ var SuperParticle = function (tag, options) {
             }
         },
 
-        behavior: { 
-            bounce:              true,
-            slowDownOnCollision: false,
-        },
-
         _size: 0,
+    };
+
+    this._behavior = {
+        bounce:              true,
+        slowdownOnCollision: false,
     };
 
     //// === PUBLIC VARIABLES ===
@@ -81,6 +111,34 @@ var SuperParticle = function (tag, options) {
 };
 
 //// === PUBLIC METHODS ===
+//state
+SuperParticle.prototype.getState = function () {
+    return JSON.parse(JSON.stringify({
+        position: this._position,
+        movement: this._movement,
+        gravity: this._gravity,
+        apperance: {
+            shape: this._apperance.shape,
+            image: {
+                data: this._apperance.image.sourceData.toDataURL(),
+                size: this._apperance.image.size,
+                opacity: this._apperance.image.opacity,
+            },
+            opacity: this._apperance.opacity,
+        },
+        size: this._apperance._size,
+        behavior: this._behavior,
+
+        tag: this.tag,
+    }));
+};
+
+//properties
+SuperParticle.prototype.size = function () {
+    return this._apperance._size;
+};
+
+//modificators
 SuperParticle.prototype.setSpeed = function (targetSpeed) {
     if (!isFinite(targetSpeed))
         throw new Error("Speed have to be finite number.");
@@ -128,10 +186,7 @@ SuperParticle.prototype.applyForce = function (vx, vy, changeInitialSpeed) {
     return this;
 };
 
-SuperParticle.prototype.size = function () {
-    return this._apperance._size;
-}
-
+//processing / drawing
 SuperParticle.prototype.attractTo = function (other) {
     //if no force, we do not have to calculate anything
     if (this._gravity.force == 0 || other._gravity.force == 0)
@@ -148,7 +203,7 @@ SuperParticle.prototype.attractTo = function (other) {
         Math.sqr(this._position.y - other._position.y);
 
     if (distanceSqr > Math.SQRT2 && isFinite(distanceSqr)) {
-        var gravityForce = (this._gravity.force * other._gravity.force) / distanceSqr;
+        var gravityForce = Math.abs(this._gravity.force * other._gravity.force) / distanceSqr;
 
         //let's move objects even when one has no force (it stills should be attracted to each other)
         if (gravityForce <= 0)
@@ -194,7 +249,7 @@ SuperParticle.prototype.checkPosition = function (canvasWidth, canvasHeight) {
     var size = this.size();
     var radius = size / 2;
 
-    if (this._apperance.behavior.bounce) {
+    if (this._behavior.bounce) {
         //bouncing handling
         if (this._position.x + radius >= canvasWidth && this._movement.vx > 0) {
             this._movement.vx = -this._movement.vx;
@@ -235,7 +290,7 @@ SuperParticle.prototype.checkPosition = function (canvasWidth, canvasHeight) {
         }
     }
 
-    if (collision && this._apperance.behavior.slowDownOnCollision)
+    if (collision && this._behavior.slowdownOnCollision)
         this.resetSpeed();
 
     return this;
@@ -309,13 +364,102 @@ SuperParticle.prototype.draw = function (canvasContext, enableImageSmoothing) {
 //// === PRIVATE METHODS ===
 //options
 SuperParticle.prototype._loadOptions = function (options) {
-    if (typeof options === 'undefined')
+    if (typeof options !== 'object')
         return false;
 
-    // if ('maskVisible'          in options && typeof options.maskVisible === 'boolean')
-    //     that.maskVisibiliy(options.maskVisible);
+    if ('x'             in options && isFinite(options.x))
+        this._position.x = options.x;
 
-    //TODO size recalculate & cache on properties change
+    if ('y'             in options && isFinite(options.y))
+        this._position.y = options.y;
+
+    if ('vx'            in options && isFinite(options.vx)) {
+        this._movement.vx = options.vx;
+        this._movement.initialSpeedSqr = Math.sqr(this._movement.vx) + Math.sqr(this._movement.vy);
+    }
+
+    if ('vy'            in options && isFinite(options.vy)) {
+        this._movement.vy = options.vy;
+        this._movement.initialSpeedSqr = Math.sqr(this._movement.vx) + Math.sqr(this._movement.vy);
+    }
+
+    if ('gravityForce'  in options && isFinite(options.gravityForce))
+        this._gravity.force = options.gravityForce;
+
+    if (typeof options.apperance === "object") {
+        //fill
+        if ('shapeType'     in options.apperance) {
+            if (options.apperance.shapeType === "circle" || options.apperance.shapeType === "square")
+                this._apperance.shape.type = options.apperance.shapeType;
+            else if (options.apperance.shapeType === "none")
+                this._apperance.shape.type = undefined;
+        }
+
+        if ('shapeSize'     in options.apperance && isFinite(options.apperance.shapeSize)) {
+            if (options.apperance.shapeSize >= 0) {
+                this._apperance.shape.size = options.apperance.shapeSize;
+                this._recalculateSize();
+            }
+        }
+
+        if ('shapeColor'    in options.apperance && typeof options.apperance.shapeColor === "string")
+            this._apperance.shape.color = options.apperance.shapeColor;
+
+        //stroke
+        if ('strokeWidth'   in options.apperance && isFinite(options.apperance.strokeWidth)) {
+            if (options.apperance.strokeWidth >= 0) {
+                this._apperance.shape.stroke.width = options.apperance.strokeWidth;
+                this._recalculateSize();
+            }
+        }
+
+        if ('strokeColor'   in options.apperance && typeof options.apperance.strokeColor === "string")
+            this._apperance.shape.stroke.color = options.apperance.strokeColor;
+
+        //image
+        if ('image'         in options.apperance && options.apperance.image instanceof HTMLImageElement) {
+            try {
+                var image = Images.getCanvasForImage(options.apperance.image);
+                this._apperance.image.sourceData = image;
+
+                if (this._apperance.image.size)
+                    this._apperance.image.data = Images.getScaledImage(image, this._apperance.image.size);
+            }
+            catch (e) {
+                //unusable image :(
+                console.log("Particle image is unusable. Image won't be loaded.");
+            }
+        }
+
+        if ('imageSize'     in options.apperance && isFinite(options.apperance.imageSize)) {
+            if (options.apperance.imageSize >= 0) {
+                this._apperance.image.size = options.apperance.imageSize;
+                this._recalculateSize();
+
+                if (this._apperance.image.sourceData)
+                    this._apperance.image.data = Images.getScaledImage(this._apperance.image.sourceData, this._apperance.image.size);
+            }
+        }
+
+        if ('imageOpacity'  in options.apperance && isFinite(options.apperance.imageOpacity)) {
+            if (options.apperance.imageOpacity >= 0 && options.apperance.imageOpacity <= 1)
+                this._apperance.image.opacity = options.apperance.imageOpacity;
+        }
+
+        //opacity
+        if ('opacity'       in options.apperance && isFinite(options.apperance.opacity))
+            if (options.apperance.opacity > 0 && options.apperance.opacity <= 1)
+                this._apperance.opacity.value = options.apperance.opacity;
+    }
+
+    //behavior
+    if (typeof options.behavior === "object") {
+        if ('bounce'            in options.behavior && typeof options.behavior.bounce === "boolean")
+            this._behavior.bounce = options.behavior.bounce;
+
+        if ('collisionSlowdown' in options.behavior && typeof options.behavior.collisionSlowdown === "boolean")
+            this._behavior.slowdownOnCollision = options.behavior.collisionSlowdown;
+    }
 
     return true;
 };
